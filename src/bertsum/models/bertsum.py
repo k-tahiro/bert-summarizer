@@ -22,9 +22,9 @@ class BertSumExt(nn.Module):
         # classifier layer
         self.linear = nn.Linear(self.bert.config.hidden_size, 1)
 
-    def forward(self, src, cls_idxs: list = None):
+    def forward(self, src: torch.Tensor, cls_idxs: list = None):
         if cls_idxs is None:
-            cls_idxs = [i for i in range(src.shape[1])]
+            cls_idxs = [i for i in range(src.size()[1])]
 
         x, _ = self.bert(src)
 
@@ -57,7 +57,7 @@ class BertSumAbs(nn.Module):
         self.decoder = nn.TransformerDecoder(decoder_layer,
                                              num_layers=num_decoder_layers)
 
-    def forward(self, src, tgt):
+    def forward(self, src: torch.Tensor, tgt: torch.Tensor):
         # encode
         memory, _ = self.encoder(src)
         memory = memory.permute(1, 0, 2)
