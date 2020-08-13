@@ -1,4 +1,4 @@
-from transformers import AutoModel
+from transformers import AutoModel, AutoTokenizer
 import torch
 from torch import nn
 
@@ -48,9 +48,12 @@ class BertSumAbs(nn.Module):
         self.encoder = AutoModel.from_pretrained(model_type)
 
         # decoder
+        tokenizer = AutoTokenizer.from_pretrained(model_type)
+        pad_token = tokenizer.special_tokens_map_extended['pad_token']
+        padding_idx = tokenizer.vocab[pad_token]
         self.embeddings = nn.Embedding(self.encoder.config.vocab_size,
                                        self.encoder.config.hidden_size,
-                                       padding_idx=0)
+                                       padding_idx=padding_idx)
 
         decoder_layer = nn.TransformerDecoderLayer(d_model=self.encoder.config.hidden_size,
                                                    nhead=num_decoder_heads)
