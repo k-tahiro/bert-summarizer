@@ -8,7 +8,7 @@ class BertSumExt(nn.Module):
                  model_type: str,
                  num_encoder_heads: int = 8,
                  num_encoder_layers: int = 2):
-        super(BertSumExt, self).__init__()
+        super().__init__()
 
         # sentence embedding layer
         self.bert = AutoModel.from_pretrained(model_type)
@@ -26,14 +26,14 @@ class BertSumExt(nn.Module):
         if cls_idxs is None:
             cls_idxs = [i for i in range(src.shape[1])]
 
-        x = self.bert.forward(src)[0]
+        x = self.bert(src)[0]
 
         x = x[:, cls_idxs, :]
         x = x.permute(1, 0, 2)
-        x = self.encoder.forward(x)
+        x = self.encoder(x)
 
         x = x.permute(1, 0, 2)
-        x = self.linear.forward(x)
+        x = self.linear(x)
         return torch.sigmoid(x)
 
 
