@@ -26,7 +26,7 @@ class BertSumExt(nn.Module):
         if cls_idxs is None:
             cls_idxs = [i for i in range(src.shape[1])]
 
-        x = self.bert(src)[0]
+        x, _ = self.bert(src)
 
         x = x[:, cls_idxs, :]
         x = x.permute(1, 0, 2)
@@ -48,14 +48,23 @@ class BertSumAbs(nn.Module):
         self.encoder = AutoModel.from_pretrained(model_type)
 
         # decoder
+        self.embeddings = nn.Embedding(self.encoder.config.vocab_size,
+                                       self.encoder.config.hidden_size,
+                                       padding_idx=0)
+
         decoder_layer = nn.TransformerDecoderLayer(d_model=self.encoder.config.hidden_size,
                                                    nhead=num_decoder_heads)
         self.decoder = nn.TransformerDecoder(decoder_layer,
                                              num_layers=num_decoder_layers)
 
     def forward(self, src, tgt):
-        x = self.encoder.forward(src)[0]
+        # encode
+        memory, _ = self.encoder(src)
+        memory = memory.permute(1, 0, 2)
 
-        tgt = tgt.permute(1, 0)
-        memory = x.permute(1, 0, 2)
-        return self.decoder.forward(tgt, memory).permute(1, 0, 2)
+        # decode
+        tgt = self.embeddings(tgt)
+        tgt = tgt.permute(1, 0, 2)
+        x = self.decoder(tgt, memory)
+        x = x.permute(1, 0, 2)
+        return x
