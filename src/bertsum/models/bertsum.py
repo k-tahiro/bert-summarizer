@@ -8,7 +8,7 @@ class BertSumExt(nn.Module):
                  model_type: str,
                  num_encoder_heads: int = 8,
                  num_encoder_layers: int = 2):
-        super().__init__()
+        super(BertSumExt, self).__init__()
 
         # sentence embedding layer
         self.bert = AutoModel.from_pretrained(model_type)
@@ -67,7 +67,8 @@ class BertSumAbs(nn.Module):
 
         # decode
         tgt = self.embeddings(tgt)
-        tgt = tgt.permute(1, 0, 2)
-        x = self.decoder(tgt, memory)
-        x = x.permute(1, 0, 2)
+        x = self \
+            .decoder(tgt.permute(1, 0, 2),
+                     memory.permute(1, 0, 2)) \
+            .permute(1, 0, 2)
         return x
