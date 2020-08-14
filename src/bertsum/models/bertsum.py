@@ -1,8 +1,11 @@
+from logging import getLogger
 from typing import Any, Dict, List, Optional
 
 from transformers import AutoModel, AutoTokenizer
 import torch
 from torch import nn
+
+logger = getLogger(__name__)
 
 
 class BertSumExt(nn.Module):
@@ -13,7 +16,7 @@ class BertSumExt(nn.Module):
                  dropout: float = 0.2,
                  activation: str = 'gelu',
                  num_layers: int = 2,
-                 norm: nn.Module = None,
+                 norm: Optional[nn.Module] = None,
                  eps: float = 1e-6,
                  bias: bool = True):
         super(BertSumExt, self).__init__()
@@ -64,7 +67,7 @@ class BertSumAbs(nn.Module):
                  dropout: float = 0.2,
                  activation: str = 'gelu',
                  num_layers: int = 6,
-                 norm: nn.Module = None,
+                 norm: Optional[nn.Module] = None,
                  eps: float = 1e-6):
         super(BertSumAbs, self).__init__()
 
