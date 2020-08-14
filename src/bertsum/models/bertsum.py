@@ -10,21 +10,25 @@ class BertSumExt(nn.Module):
                  model_type: str,
                  nhead: int = 8,
                  dim_feedforward: int = 2048,
-                 dropout: float = 0.1,
-                 activation: str = 'relu',
+                 dropout: float = 0.2,
+                 activation: str = 'gelu',
                  num_layers: int = 2,
-                 norm: nn.Module = None):
+                 norm: nn.Module = None,
+                 eps: float = 1e-6):
         super(BertSumExt, self).__init__()
 
         # sentence embedding layer
         self.bert = AutoModel.from_pretrained(model_type)
+        hidden_size = self.bert.config.hidden_size
 
         # inter-sentence contextual embedding layer
-        encoder_layer = nn.TransformerEncoderLayer(d_model=self.bert.config.hidden_size,
+        encoder_layer = nn.TransformerEncoderLayer(d_model=hidden_size,
                                                    nhead=nhead,
                                                    dim_feedforward=dim_feedforward,
                                                    dropout=dropout,
                                                    activation=activation)
+        if norm is None and eps:
+            norm = nn.LayerNorm(hidden_size, eps=eps)
         self.encoder = nn.TransformerEncoder(encoder_layer,
                                              num_layers=num_layers,
                                              norm=norm)
