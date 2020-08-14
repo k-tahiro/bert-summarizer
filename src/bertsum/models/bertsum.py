@@ -1,3 +1,5 @@
+from typing import Dict, Optional
+
 from transformers import AutoModel, AutoTokenizer
 import torch
 from torch import nn
@@ -22,15 +24,19 @@ class BertSumExt(nn.Module):
         # classifier layer
         self.linear = nn.Linear(self.bert.config.hidden_size, 1)
 
-    def forward(self, src: torch.Tensor, cls_idxs: list = None):
+    def forward(self,
+                src: torch.Tensor,
+                cls_idxs: list = None,
+                bert_args: Dict[str] = {},
+                encoder_args: Dict[str] = {}):
         if cls_idxs is None:
             cls_idxs = [i for i in range(src.size()[1])]
 
-        x, _ = self.bert(src)
+        x = self.bert(src, **bert_args)[0]
 
         x = x[:, cls_idxs, :]
         x = x.permute(1, 0, 2)
-        x = self.encoder(x)
+        x = self.encoder(x, **encoder_args)
 
         x = x.permute(1, 0, 2)
         x = self.linear(x)
@@ -60,15 +66,18 @@ class BertSumAbs(nn.Module):
         self.decoder = nn.TransformerDecoder(decoder_layer,
                                              num_layers=num_decoder_layers)
 
-    def forward(self, src: torch.Tensor, tgt: torch.Tensor):
+    def forward(self,
+                src: torch.Tensor,
+                tgt: torch.Tensor,
+                encoder_args: Dict[str] = {},
+                decoder_args: Dict[str] = {}) -> torch.Tensor:
         # encode
-        memory, _ = self.encoder(src)
+        memory = self.encoder(src, **encoder_args)[0]
         memory = memory.permute(1, 0, 2)
 
         # decode
         tgt = self.embeddings(tgt)
-        x = self \
-            .decoder(tgt.permute(1, 0, 2),
-                     memory.permute(1, 0, 2)) \
-            .permute(1, 0, 2)
+        tgt = tgt.permute(1, 0, 2)
+        x = self.decoder(tgt, memory, **decoder_args)
+        x = x.permute(1, 0, 2)
         return x
