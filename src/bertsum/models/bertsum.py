@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from transformers import AutoModel, AutoTokenizer
 import torch
@@ -35,8 +35,8 @@ class BertSumExt(nn.Module):
     def forward(self,
                 src: torch.Tensor,
                 cls_idxs: List[int] = None,
-                bert_args: Dict[str] = {},
-                encoder_args: Dict[str] = {}):
+                bert_args: Dict[str, Any] = {},
+                encoder_args: Dict[str, Any] = {}):
         if cls_idxs is None:
             cls_idxs = [i for i in range(src.size()[1])]
 
@@ -89,8 +89,8 @@ class BertSumAbs(nn.Module):
     def forward(self,
                 src: torch.Tensor,
                 tgt: torch.Tensor,
-                encoder_args: Dict[str] = {},
-                decoder_args: Dict[str] = {}) -> torch.Tensor:
+                encoder_args: Dict[str, Any] = {},
+                decoder_args: Dict[str, Any] = {}) -> torch.Tensor:
         # encode
         memory = self.encoder(src, **encoder_args)[0]
         memory = memory.permute(1, 0, 2)
