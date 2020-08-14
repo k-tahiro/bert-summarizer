@@ -14,7 +14,8 @@ class BertSumExt(nn.Module):
                  activation: str = 'gelu',
                  num_layers: int = 2,
                  norm: nn.Module = None,
-                 eps: float = 1e-6):
+                 eps: float = 1e-6,
+                 bias: bool = True):
         super(BertSumExt, self).__init__()
 
         # sentence embedding layer
@@ -34,7 +35,7 @@ class BertSumExt(nn.Module):
                                              norm=norm)
 
         # classifier layer
-        self.linear = nn.Linear(self.bert.config.hidden_size, 1)
+        self.linear = nn.Linear(hidden_size, 1, bias=bias)
 
     def forward(self,
                 src: torch.Tensor,
