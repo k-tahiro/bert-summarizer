@@ -23,8 +23,3 @@ class SegmentEmbedding:
                 segments_ids += s * [1]
 
         return segments_ids
-
-
-class PositionEmbedding:
-    def __call__(self, src: List[int]):
-        pass
