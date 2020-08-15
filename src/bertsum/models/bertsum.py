@@ -1,9 +1,11 @@
 from logging import getLogger
 from typing import Any, Dict, List, Optional
 
-from transformers import AutoModel, AutoTokenizer
+from transformers import AutoModel
 import torch
 from torch import nn
+
+from .common import PositionalEncoding
 
 logger = getLogger(__name__)
 
@@ -26,6 +28,7 @@ class BertSumExt(nn.Module):
         hidden_size = self.bert.config.hidden_size
 
         # inter-sentence contextual embedding layer
+        self.pos_emb = PositionalEncoding(dropout, hidden_size)
         encoder_layer = nn.TransformerEncoderLayer(d_model=hidden_size,
                                                    nhead=nhead,
                                                    dim_feedforward=dim_feedforward,
@@ -50,6 +53,7 @@ class BertSumExt(nn.Module):
 
         x = self.bert(src, **bert_args)[0]
 
+        x = self.pos_emb(x)
         x = x[:, cls_idxs, :]
         x = x.permute(1, 0, 2)
         x = self.encoder(x, **encoder_args)
@@ -75,14 +79,15 @@ class BertSumAbs(nn.Module):
         self.encoder = AutoModel.from_pretrained(model_type)
         hidden_size = self.encoder.config.hidden_size
 
-        # decoder
-        tokenizer = AutoTokenizer.from_pretrained(model_type)
-        pad_token = tokenizer.special_tokens_map_extended['pad_token']
-        padding_idx = tokenizer.vocab[pad_token]
+        # decoder embedding
+        self.pad_token_id = self.encoder.config.pad_token_id
         self.embeddings = nn.Embedding(self.encoder.config.vocab_size,
                                        hidden_size,
-                                       padding_idx=padding_idx)
+                                       padding_idx=self.pad_token_id)
+        self.pos_emb = PositionalEncoding(dropout,
+                                          self.embeddings.embedding_dim)
 
+        # decoder
         decoder_layer = nn.TransformerDecoderLayer(d_model=hidden_size,
                                                    nhead=nhead,
                                                    dim_feedforward=dim_feedforward,
@@ -99,13 +104,36 @@ class BertSumAbs(nn.Module):
                 tgt: torch.Tensor,
                 encoder_args: Dict[str, Any] = {},
                 decoder_args: Dict[str, Any] = {}) -> torch.Tensor:
+        # create masks
+        attention_mask = self._mask(src)
+        tgt_key_padding_mask = self._mask(tgt) == 0
+        memory_key_padding_mask = attention_mask == 0
+
+        encoder_args.setdefault('attention_mask',
+                                attention_mask)
+        decoder_args.setdefault('tgt_key_padding_mask',
+                                tgt_key_padding_mask)
+        decoder_args.setdefault('memory_key_padding_mask',
+                                memory_key_padding_mask)
+
         # encode
         memory = self.encoder(src, **encoder_args)[0]
         memory = memory.permute(1, 0, 2)
 
         # decode
         tgt = self.embeddings(tgt)
+        tgt = self.pos_emb(tgt)
         tgt = tgt.permute(1, 0, 2)
+
         x = self.decoder(tgt, memory, **decoder_args)
         x = x.permute(1, 0, 2)
         return x
+
+    def _mask(self, token_ids_batch: torch.Tensor) -> torch.Tensor:
+        return torch.tensor([
+            [
+                0 if token_id == self.pad_token_id else 1
+                for token_id in token_ids
+            ]
+            for token_ids in token_ids_batch
+        ])
