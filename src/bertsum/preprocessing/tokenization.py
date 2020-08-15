@@ -39,9 +39,9 @@ class BertSumTokenizer(BertTokenizer):
         else:
             insert_token_ids = sep + cls
 
-        i = len(insert_token_ids) // 2
-        former_insert_token_ids = insert_token_ids[:-i]
-        latter_insert_token_ids = insert_token_ids[-i:]
+        i = sum(divmod(len(insert_token_ids), 2))
+        former_insert_token_ids = insert_token_ids[:i]
+        latter_insert_token_ids = insert_token_ids[i:]
 
         return len(cls + token_ids_0 + former_insert_token_ids) * [0] \
             + len(latter_insert_token_ids + token_ids_1 + sep) * [1]
