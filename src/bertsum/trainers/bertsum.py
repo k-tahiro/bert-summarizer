@@ -50,7 +50,9 @@ class BertSumDataset(Dataset):
         src = self.sentencizer(src)
         if len(src) > 1:
             src = [src]
-        src = self.src_tokenizer(src, padding='max_length')
+        src = self.src_tokenizer(src,
+                                 padding='max_length',
+                                 return_tensors='pt')
         src = {
             k: v[0]
             for k, v in src.items()
@@ -60,7 +62,9 @@ class BertSumDataset(Dataset):
         tgt = self.sentencizer(tgt)
         if len(tgt) > 1:
             tgt = [tgt]
-        tgt = self.tgt_tokenizer(tgt, padding='max_length')
+        tgt = self.tgt_tokenizer(tgt,
+                                 padding='max_length',
+                                 return_tensors='pt')
         tgt = {
             k: v[0]
             for k, v in tgt.items()
