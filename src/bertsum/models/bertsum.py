@@ -100,40 +100,24 @@ class BertSumAbs(nn.Module):
                                              norm=norm)
 
     def forward(self,
-                src: torch.Tensor,
-                tgt: torch.Tensor,
-                encoder_args: Dict[str, Any] = {},
-                decoder_args: Dict[str, Any] = {}) -> torch.Tensor:
+                src: Dict[str, torch.Tensor],
+                tgt: Dict[str, torch.Tensor]) -> torch.Tensor:
         # create masks
-        attention_mask = self._mask(src)
-        tgt_key_padding_mask = self._mask(tgt) == 0
-        memory_key_padding_mask = attention_mask == 0
-
-        encoder_args.setdefault('attention_mask',
-                                attention_mask)
-        decoder_args.setdefault('tgt_key_padding_mask',
-                                tgt_key_padding_mask)
-        decoder_args.setdefault('memory_key_padding_mask',
-                                memory_key_padding_mask)
+        tgt_key_padding_mask = tgt['attention_mask'] == 0
+        memory_key_padding_mask = src['attention_mask'] == 0
 
         # encode
-        memory = self.encoder(src, **encoder_args)[0]
+        memory = self.encoder(**src)[0]
         memory = memory.permute(1, 0, 2)
 
         # decode
-        tgt = self.embeddings(tgt)
+        tgt = self.embeddings(tgt['input_ids'])
         tgt = self.pos_emb(tgt)
         tgt = tgt.permute(1, 0, 2)
 
-        x = self.decoder(tgt, memory, **decoder_args)
+        x = self.decoder(tgt,
+                         memory,
+                         tgt_key_padding_mask=tgt_key_padding_mask,
+                         memory_key_padding_mask=memory_key_padding_mask)
         x = x.permute(1, 0, 2)
         return x
-
-    def _mask(self, token_ids_batch: torch.Tensor) -> torch.Tensor:
-        return torch.tensor([
-            [
-                0 if token_id == self.pad_token_id else 1
-                for token_id in token_ids
-            ]
-            for token_ids in token_ids_batch
-        ])
