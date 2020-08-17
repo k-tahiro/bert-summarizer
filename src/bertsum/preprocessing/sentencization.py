@@ -11,7 +11,7 @@ class Sentencizer:
     def _infer_seps(self, model_type: str) -> List[str]:
         # FIXME: infer separators depends on model_type
         logger.info('inferring separators...')
-        logger.warning('This step returns fixed separators!'
+        logger.warning('This step returns fixed separators!\n'
                        'Please fix me...')
         return ['\n', '. ', '。']
 
