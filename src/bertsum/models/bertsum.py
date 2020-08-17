@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from transformers import AutoModel
 import torch
@@ -26,6 +26,8 @@ class BertSumExt(nn.Module):
         # sentence embedding layer
         self.bert = AutoModel.from_pretrained(model_type)
         hidden_size = self.bert.config.hidden_size
+        self.cls_token_id = self.bert.config.cls_token_id
+        self.pad_token_id = self.bert.config.pad_token_id
 
         # inter-sentence contextual embedding layer
         self.pos_emb = PositionalEncoding(dropout, hidden_size)
@@ -44,19 +46,16 @@ class BertSumExt(nn.Module):
         self.linear = nn.Linear(hidden_size, 1, bias=bias)
 
     def forward(self,
-                src: torch.Tensor,
-                cls_idxs: List[int] = None,
-                bert_args: Dict[str, Any] = {},
-                encoder_args: Dict[str, Any] = {}):
+                src: Dict[str, torch.Tensor],
+                cls_idxs: Union[None, List[List[int]], torch.Tensor] = None):
         if cls_idxs is None:
-            cls_idxs = [i for i in range(src.size()[1])]
+            cls_idxs = src['input_ids'][:, :, None] == self.cls_token_id
 
-        x = self.bert(src, **bert_args)[0]
+        x = self.bert(**src)[0]
 
         x = self.pos_emb(x)
-        x = x[:, cls_idxs, :]
         x = x.permute(1, 0, 2)
-        x = self.encoder(x, **encoder_args)
+        x = self.encoder(x, src_key_padding_mask=cls_idxs)
 
         x = x.permute(1, 0, 2)
         x = self.linear(x)
@@ -80,10 +79,9 @@ class BertSumAbs(nn.Module):
         hidden_size = self.encoder.config.hidden_size
 
         # decoder embedding
-        self.pad_token_id = self.encoder.config.pad_token_id
         self.embeddings = nn.Embedding(self.encoder.config.vocab_size,
                                        hidden_size,
-                                       padding_idx=self.pad_token_id)
+                                       padding_idx=self.encoder.config.pad_token_id)
         self.pos_emb = PositionalEncoding(dropout,
                                           self.embeddings.embedding_dim)
 
