@@ -49,7 +49,7 @@ class BertSumExt(nn.Module):
                 src: Dict[str, torch.Tensor],
                 cls_idxs: Union[None, List[List[int]], torch.Tensor] = None):
         if cls_idxs is None:
-            cls_idxs = src['input_ids'][:, :, None] == self.cls_token_id
+            cls_idxs = src['input_ids'] == self.cls_token_id
 
         x = self.bert(**src)[0]
 
