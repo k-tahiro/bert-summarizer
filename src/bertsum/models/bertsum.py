@@ -65,6 +65,7 @@ class BertSumExt(nn.Module):
 class BertSumAbs(nn.Module):
     def __init__(self,
                  model_type: str,
+                 num_embeddings: int = None,
                  nhead: int = 8,
                  dim_feedforward: int = 2048,
                  dropout: float = 0.2,
@@ -79,7 +80,7 @@ class BertSumAbs(nn.Module):
         hidden_size = self.encoder.config.hidden_size
 
         # decoder embedding
-        self.embeddings = nn.Embedding(self.encoder.config.vocab_size,
+        self.embeddings = nn.Embedding(num_embeddings or self.encoder.config.vocab_size,
                                        hidden_size,
                                        padding_idx=self.encoder.config.pad_token_id)
         self.pos_emb = PositionalEncoding(dropout,
