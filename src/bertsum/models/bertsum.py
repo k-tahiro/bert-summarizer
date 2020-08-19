@@ -10,7 +10,13 @@ from .common import PositionalEncoding
 logger = getLogger(__name__)
 
 
-class BertSumExt(nn.Module):
+class BertSum(nn.Module):
+    def __init__(self, model_type: str):
+        super(BertSum, self).__init__()
+        self.model_type = model_type
+
+
+class BertSumExt(BertSum):
     def __init__(self,
                  model_type: str,
                  nhead: int = 8,
@@ -21,7 +27,7 @@ class BertSumExt(nn.Module):
                  norm: Optional[nn.Module] = None,
                  eps: float = 1e-6,
                  bias: bool = True):
-        super(BertSumExt, self).__init__()
+        super(BertSumExt, self).__init__(model_type)
 
         # sentence embedding layer
         self.bert = AutoModel.from_pretrained(model_type)
@@ -62,7 +68,7 @@ class BertSumExt(nn.Module):
         return torch.sigmoid(x)
 
 
-class BertSumAbs(nn.Module):
+class BertSumAbs(BertSum):
     def __init__(self,
                  model_type: str,
                  num_embeddings: int = None,
@@ -73,7 +79,7 @@ class BertSumAbs(nn.Module):
                  num_layers: int = 6,
                  norm: Optional[nn.Module] = None,
                  eps: float = 1e-6):
-        super(BertSumAbs, self).__init__()
+        super(BertSumAbs, self).__init__(model_type)
 
         # encoder
         self.encoder = AutoModel.from_pretrained(model_type)
