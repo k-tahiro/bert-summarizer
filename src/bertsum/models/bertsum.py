@@ -81,7 +81,9 @@ class BertSumAbs(BertSum):
                  activation: str = 'gelu',
                  num_layers: int = 6,
                  norm: Optional[nn.Module] = None,
-                 eps: float = 1e-6):
+                 eps: float = 1e-6,
+                 vocab_size: Optional[int] = None,
+                 bias: bool = False):
         super(BertSumAbs, self).__init__(model_type)
 
         # encoder
@@ -107,6 +109,13 @@ class BertSumAbs(BertSum):
                                              num_layers=num_layers,
                                              norm=norm)
 
+        # generator
+        vocab_size = vocab_size or self.encoder.config.vocab_size
+        self.generator = nn.Sequential(
+            nn.Linear(hidden_size, vocab_size, bias=bias),
+            nn.Softmax(dim=-1)
+        )
+
     def forward(self,
                 src: Dict[str, torch.Tensor],
                 tgt: Dict[str, torch.Tensor]) -> torch.Tensor:
@@ -126,4 +135,6 @@ class BertSumAbs(BertSum):
                          tgt_key_padding_mask=tgt_key_padding_mask,
                          memory_key_padding_mask=memory_key_padding_mask)
         x = x.permute(1, 0, 2)
+
+        x = self.generator(x)
         return x
