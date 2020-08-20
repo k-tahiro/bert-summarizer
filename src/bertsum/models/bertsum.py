@@ -74,7 +74,7 @@ class BertSumExt(BertSum):
 class BertSumAbs(BertSum):
     def __init__(self,
                  model_type: str,
-                 num_embeddings: int = None,
+                 vocab_size: Optional[int] = None,
                  nhead: int = 8,
                  dim_feedforward: int = 2048,
                  dropout: float = 0.2,
@@ -82,7 +82,6 @@ class BertSumAbs(BertSum):
                  num_layers: int = 6,
                  norm: Optional[nn.Module] = None,
                  eps: float = 1e-6,
-                 vocab_size: Optional[int] = None,
                  bias: bool = False):
         super(BertSumAbs, self).__init__(model_type)
 
@@ -91,7 +90,8 @@ class BertSumAbs(BertSum):
         hidden_size = self.encoder.config.hidden_size
 
         # decoder embedding
-        self.embeddings = nn.Embedding(num_embeddings or self.encoder.config.vocab_size,
+        vocab_size = vocab_size or self.encoder.config.vocab_size
+        self.embeddings = nn.Embedding(vocab_size,
                                        hidden_size,
                                        padding_idx=self.encoder.config.pad_token_id)
         self.pos_emb = PositionalEncoding(dropout,
@@ -110,7 +110,6 @@ class BertSumAbs(BertSum):
                                              norm=norm)
 
         # generator
-        vocab_size = vocab_size or self.encoder.config.vocab_size
         self.generator = nn.Sequential(
             nn.Linear(hidden_size, vocab_size, bias=bias),
             nn.Softmax(dim=-1)
