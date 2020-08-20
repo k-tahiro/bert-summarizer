@@ -49,7 +49,10 @@ class BertSumExt(BertSum):
                                              norm=norm)
 
         # classifier layer
-        self.linear = nn.Linear(hidden_size, 1, bias=bias)
+        self.classifier = nn.Sequential(
+            nn.Linear(hidden_size, 1, bias=bias),
+            nn.Sigmoid()
+        )
 
     def forward(self,
                 src: Dict[str, torch.Tensor],
@@ -64,8 +67,9 @@ class BertSumExt(BertSum):
         x = self.encoder(x, src_key_padding_mask=cls_idxs)
 
         x = x.permute(1, 0, 2)
-        x = self.linear(x)
-        return torch.sigmoid(x)
+
+        x = self.classifier(x)
+        return x
 
 
 class BertSumAbs(BertSum):
