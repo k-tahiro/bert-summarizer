@@ -70,7 +70,7 @@ class BertSumAbsSummarizer(BertSumSummarizer):
     def _run(self, data_loader: DataLoader):
         batch_size = data_loader.batch_size
         for src, _ in data_loader:
-            src_features = self.model.encoder(**src)
+            src_features, _ = self.model.encoder(**src)
 
     # def _init_decoder_state(self, src, src_features, batch_size):
             dec_states = TransformerDecoderState(src)
@@ -117,7 +117,7 @@ class BertSumAbsSummarizer(BertSumSummarizer):
                                                          step=step)
 
                 # Generator forward.
-                log_probs = self.generator.forward(
+                log_probs = self.model.generator.forward(
                     dec_out.transpose(0, 1).squeeze(0))
                 vocab_size = log_probs.size(-1)
 
@@ -134,23 +134,6 @@ class BertSumAbsSummarizer(BertSumSummarizer):
                 curr_scores = log_probs / length_penalty
 
                 if(self.args.block_trigram):
-                    cur_len = alive_seq.size(1)
-                    if(cur_len > 3):
-                        for i in range(alive_seq.size(0)):
-                            fail = False
-                            words = [int(w) for w in alive_seq[i]]
-                            words = [self.vocab.convert_ids_to_tokens([w])[0]
-                                     for w in words]
-                            words = ' '.join(words).replace(' ##', '').split()
-                            if(len(words) <= 3):
-                                continue
-                            trigrams = [(words[i-1], words[i], words[i+1])
-                                        for i in range(1, len(words)-1)]
-                            trigram = tuple(trigrams[-1])
-                            if trigram in trigrams[:-1]:
-                                fail = True
-                            if fail:
-                                curr_scores[i] = -10e20
 
                 curr_scores = curr_scores.reshape(-1, beam_size * vocab_size)
                 topk_scores, topk_ids = curr_scores.topk(beam_size, dim=-1)
@@ -216,6 +199,26 @@ class BertSumAbsSummarizer(BertSumSummarizer):
                 src_features = src_features.index_select(0, select_indices)
                 dec_states.map_batch_fn(
                     lambda state, dim: state.index_select(dim, select_indices))
+
+        def _block_trigram(self, alive_seq: torch.Tensor, curr_scores):
+            cur_len = alive_seq.size(1)
+            if(cur_len > 3):
+                for i in range(alive_seq.size(0)):
+                    fail = False
+                    words = [int(w) for w in alive_seq[i]]
+                    words = [self.vocab.convert_ids_to_tokens([w])[0]
+                             for w in words]
+                    words = ' '.join(words).replace(' ##', '').split()
+                    if(len(words) <= 3):
+                        continue
+                    trigrams = [(words[i-1], words[i], words[i+1])
+                                for i in range(1, len(words)-1)]
+                    trigram = tuple(trigrams[-1])
+                    if trigram in trigrams[:-1]:
+                        fail = True
+                    if fail:
+                        curr_scores[i] = -10e20
+            return curr_scores
 
 
 class DecoderState:
