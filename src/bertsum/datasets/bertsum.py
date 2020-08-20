@@ -11,6 +11,10 @@ logger = getLogger(__name__)
 
 
 class BertSumDataset(Dataset):
+    TGT_CLS_TOKEN = '[unused1]'
+    TGT_SEP_TOKEN = '[unused2]'
+    TGT_ADDITIONAL_SPECIAL_TOKENS = ['[unused3]']
+
     def __init__(self, src: List[str], tgt: List[str], model_type: str):
         if len(src) != len(tgt):
             raise RuntimeError('Different length src v.s. tgt pair is given.')
@@ -28,10 +32,16 @@ class BertSumDataset(Dataset):
         self.tgt_tokenizer = BertSumTokenizer.from_pretrained(
             model_type,
             model_max_length=model_max_length,
-            cls_token='[unused0]',
-            sep_token='[unused1]',
-            additional_special_tokens=['[unused2]']
+            cls_token=self.TGT_CLS_TOKEN,
+            sep_token=self.TGT_SEP_TOKEN,
+            additional_special_tokens=self.TGT_ADDITIONAL_SPECIAL_TOKENS
         )
+
+        vocab_size = self.tgt_tokenizer.vocab_size
+        for token in [self.TGT_CLS_TOKEN, self.TGT_SEP_TOKEN] + self.TGT_ADDITIONAL_SPECIAL_TOKENS:
+            if token not in self.tgt_tokenizer.vocab:
+                vocab_size += 1
+        self.vocab_size = vocab_size
 
     def __len__(self) -> int:
         return self.n_len
