@@ -61,11 +61,10 @@ class BertSumExt(BertSum):
             cls_idxs = src['input_ids'] == self.cls_token_id
 
         x = self.bert(**src)[0]
-
         x = self.pos_emb(x)
+
         x = x.permute(1, 0, 2)
         x = self.encoder(x, src_key_padding_mask=cls_idxs)
-
         x = x.permute(1, 0, 2)
 
         x = self.classifier(x)
