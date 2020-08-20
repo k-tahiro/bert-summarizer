@@ -110,15 +110,13 @@ class BertSumAbs(BertSum):
     def forward(self,
                 src: Dict[str, torch.Tensor],
                 tgt: Dict[str, torch.Tensor]) -> torch.Tensor:
-        # create masks
-        tgt_key_padding_mask = tgt['attention_mask'] == 0
-        memory_key_padding_mask = src['attention_mask'] == 0
-
         # encode
         memory = self.encoder(**src)[0]
         memory = memory.permute(1, 0, 2)
 
         # decode
+        tgt_key_padding_mask = tgt['attention_mask'] == 0
+        memory_key_padding_mask = src['attention_mask'] == 0
         tgt = self.embeddings(tgt['input_ids'])
         tgt = self.pos_emb(tgt)
         tgt = tgt.permute(1, 0, 2)
