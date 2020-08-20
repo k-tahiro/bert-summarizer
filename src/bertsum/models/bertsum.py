@@ -112,15 +112,15 @@ class BertSumAbs(BertSum):
                 tgt: Dict[str, torch.Tensor]) -> torch.Tensor:
         # encode
         memory = self.encoder(**src)[0]
-        memory = memory.permute(1, 0, 2)
 
         # decode
         tgt_key_padding_mask = tgt['attention_mask'] == 0
         memory_key_padding_mask = src['attention_mask'] == 0
         tgt = self.embeddings(tgt['input_ids'])
         tgt = self.pos_emb(tgt)
-        tgt = tgt.permute(1, 0, 2)
 
+        tgt = tgt.permute(1, 0, 2)
+        memory = memory.permute(1, 0, 2)
         x = self.decoder(tgt,
                          memory,
                          tgt_key_padding_mask=tgt_key_padding_mask,
