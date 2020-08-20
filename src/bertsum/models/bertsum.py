@@ -19,6 +19,7 @@ class BertSum(nn.Module):
 class BertSumExt(BertSum):
     def __init__(self,
                  model_type: str,
+                 cls_token_id: int,
                  nhead: int = 8,
                  dim_feedforward: int = 2048,
                  dropout: float = 0.2,
@@ -32,8 +33,7 @@ class BertSumExt(BertSum):
         # sentence embedding layer
         self.bert = AutoModel.from_pretrained(model_type)
         hidden_size = self.bert.config.hidden_size
-        self.cls_token_id = self.bert.config.cls_token_id
-        self.pad_token_id = self.bert.config.pad_token_id
+        self.cls_token_id = cls_token_id  # cls_token_id is not contained in BertConfig
 
         # inter-sentence contextual embedding layer
         self.pos_emb = PositionalEncoding(dropout, hidden_size)
