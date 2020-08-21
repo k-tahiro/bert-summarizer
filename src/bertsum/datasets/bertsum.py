@@ -2,7 +2,6 @@ from logging import getLogger
 from typing import List
 
 from torch.utils.data import Dataset
-from transformers import AutoModel
 
 from ..preprocessing.sentencization import Sentencizer
 from ..preprocessing.tokenization import BertSumTokenizer
@@ -25,21 +24,17 @@ class BertSumDataset(Dataset):
 
         self.sentencizer = Sentencizer(model_type)
 
-        model = AutoModel.from_pretrained(model_type)
-        model_max_length = model.config.max_position_embeddings
-        self.src_tokenizer = BertSumTokenizer.from_pretrained(model_type,
-                                                              model_max_length=model_max_length)
-        self.tgt_tokenizer = BertSumTokenizer.from_pretrained(
+        self.src_tokenizer = BertSumTokenizer(model_type)
+        self.tgt_tokenizer = BertSumTokenizer(
             model_type,
-            model_max_length=model_max_length,
             cls_token=self.TGT_CLS_TOKEN,
             sep_token=self.TGT_SEP_TOKEN,
             additional_special_tokens=self.TGT_ADDITIONAL_SPECIAL_TOKENS
         )
 
-        vocab_size = self.tgt_tokenizer.vocab_size
+        vocab_size = self.tgt_tokenizer.tokenizer.vocab_size
         for token in [self.TGT_CLS_TOKEN, self.TGT_SEP_TOKEN] + self.TGT_ADDITIONAL_SPECIAL_TOKENS:
-            if token not in self.tgt_tokenizer.vocab:
+            if token not in self.tgt_tokenizer.tokenizer.vocab:
                 vocab_size += 1
         self.vocab_size = vocab_size
 
@@ -57,10 +52,9 @@ class BertSumDataset(Dataset):
     def _transform(self, src_txt: str, tgt_txt: str):
         # transform src
         src = self.sentencizer(src_txt)
-        if len(src) > 1:
-            src = [src]
         src = self.src_tokenizer(src,
                                  padding='max_length',
+                                 truncation=True,
                                  return_tensors='pt')
         src = {
             k: v[0]
@@ -69,10 +63,9 @@ class BertSumDataset(Dataset):
 
         # transform tgt
         tgt = self.sentencizer(tgt_txt)
-        if len(tgt) > 1:
-            tgt = [tgt]
         tgt = self.tgt_tokenizer(tgt,
                                  padding='max_length',
+                                 truncation=True,
                                  return_tensors='pt')
         tgt = {
             k: v[0]
