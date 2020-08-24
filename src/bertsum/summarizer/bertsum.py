@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 
 from ..datasets.bertsum import BertSumDataset, BertSumExtDataset, BertSumAbsDataset
 from ..models.bertsum import BertSum, BertSumExt, BertSumAbs
+from ..utils.tensor import tile
 
 
 class BertSumSummarizer:
@@ -72,14 +73,10 @@ class BertSumAbsSummarizer(BertSumSummarizer):
         for src, _ in data_loader:
             src_features, _ = self.model.encoder(**src)
 
-    # def _init_decoder_state(self, src, src_features, batch_size):
-            dec_states = TransformerDecoderState(src)
-            dec_states._init_cache(src_features, self.model.decoder.num_layers)
-
-            # Tile states and memory beam_size times.
-            dec_states.map_batch_fn(
-                lambda state, dim: tile(state, self.beam_size, dim=dim))
-            src_features = tile(src_features, self.beam_size, dim=0)
+            # beamed batch features
+            src_features = tile(src_features,
+                                self.beam_size,
+                                dim=0)
             batch_offset = torch.arange(batch_size,
                                         dtype=torch.long,
                                         device=self.device)
