@@ -63,9 +63,9 @@ class BertSumExt(BertSum):
         x = self.bert(**src)[0]
         x = self.pos_emb(x)
 
-        x = x.permute(1, 0, 2)
+        x = x.permute(1, 0, 2).contiguous()
         x = self.encoder(x, src_key_padding_mask=cls_idxs)
-        x = x.permute(1, 0, 2)
+        x = x.permute(1, 0, 2).contiguous()
 
         x = self.classifier(x)
         return x
@@ -112,7 +112,7 @@ class BertSumAbs(BertSum):
         # generator
         self.generator = nn.Sequential(
             nn.Linear(hidden_size, vocab_size, bias=bias),
-            nn.Softmax(dim=-1)
+            nn.LogSoftmax(dim=-1)
         )
 
     def forward(self,
@@ -127,13 +127,13 @@ class BertSumAbs(BertSum):
         tgt = self.embeddings(tgt['input_ids'])
         tgt = self.pos_emb(tgt)
 
-        tgt = tgt.permute(1, 0, 2)
-        memory = memory.permute(1, 0, 2)
+        tgt = tgt.permute(1, 0, 2).contiguous()
+        memory = memory.permute(1, 0, 2).contiguous()
         x = self.decoder(tgt,
                          memory,
                          tgt_key_padding_mask=tgt_key_padding_mask,
                          memory_key_padding_mask=memory_key_padding_mask)
-        x = x.permute(1, 0, 2)
+        x = x.permute(1, 0, 2).contiguous()
 
         x = self.generator(x)
         return x
