@@ -3,7 +3,6 @@ from typing import List
 
 from torch.utils.data import Dataset
 
-from ..preprocessing.sentencization import Sentencizer
 from ..preprocessing.tokenization import BertSumTokenizer
 
 logger = getLogger(__name__)
@@ -22,7 +21,7 @@ class BertSumDataset(Dataset):
         self.src = src
         self.tgt = tgt
 
-        self.sentencizer = Sentencizer(model_type)
+        self._init_nlp(model_type)
 
         self.src_tokenizer = BertSumTokenizer(model_type)
         self.tgt_tokenizer = BertSumTokenizer(
@@ -38,6 +37,18 @@ class BertSumDataset(Dataset):
                 vocab_size += 1
         self.vocab_size = vocab_size
 
+    def _init_nlp(self, model_type: str):
+        if 'japanese' in model_type:
+            import spacy
+            nlp = spacy.load('ja_ginza')
+        else:
+            from spacy.lang.en import English
+            nlp = English()
+            sentencizer = nlp.create_pipe("sentencizer")
+            nlp.add_pipe(sentencizer)
+
+        self.nlp = nlp
+
     def __len__(self) -> int:
         return self.n_len
 
@@ -51,7 +62,7 @@ class BertSumDataset(Dataset):
 
     def _transform(self, src_txt: str, tgt_txt: str):
         # transform src
-        src = self.sentencizer(src_txt)
+        src = list(map(str, self.nlp(src_txt).sents))
         src = self.src_tokenizer(src,
                                  padding='max_length',
                                  truncation=True,
@@ -62,7 +73,7 @@ class BertSumDataset(Dataset):
         }
 
         # transform tgt
-        tgt = self.sentencizer(tgt_txt)
+        tgt = list(map(str, self.nlp(tgt_txt).sents))
         tgt = self.tgt_tokenizer(tgt,
                                  padding='max_length',
                                  truncation=True,
