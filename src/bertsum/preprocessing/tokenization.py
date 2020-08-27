@@ -59,10 +59,13 @@ class BertSumTokenizer:
                            TOKEN_TYPE_IDS_KEY,
                            ATTENTION_MASK_KEY]
     RETURN_TENSORS = {'tf', 'pt', 'np'}
+    MODEL_MAX_LENGTH = 512
 
     def __init__(self, model_type: str, *args, **kwargs):
         self.tokenizer = InternalBertSumTokenizer.from_pretrained(model_type,
                                                                   *args, **kwargs)
+        self.max_length = self.tokenizer.max_model_input_sizes.get(model_type,
+                                                                   self.MODEL_MAX_LENGTH)
 
     def __call__(self, text: Union[List[str], List[List[str]]], *args, **kwargs) -> Dict[str, Union[List[List[int]], torch.Tensor]]:
         if not (isinstance(text, list) or isinstance(text[0], (str, list))):
@@ -88,7 +91,9 @@ class BertSumTokenizer:
 
         if truncation:
             output = self._truncate(output)
-        output = self.tokenizer.pad(output, padding)
+        output = self.tokenizer.pad(output,
+                                    padding=padding,
+                                    max_length=self.max_length)
         output = self._return_tensors(output, return_tensors)
         return output
 
@@ -139,21 +144,20 @@ class BertSumTokenizer:
         }
 
     def _truncate(self, output: Dict[str, List[List[int]]]) -> Dict[str, List[List[int]]]:
-        max_len = self.tokenizer.max_len
         batch_size = len(output[self.INPUT_IDS_KEY])
         for i in range(batch_size):
             input_ids = output[self.INPUT_IDS_KEY][i]
             seq_len = len(input_ids)
-            if seq_len <= max_len:
+            if seq_len <= self.max_length:
                 continue
 
-            input_ids = input_ids[1:max_len - 1]
+            input_ids = input_ids[1:self.max_length - 1]
             input_ids = self.tokenizer.build_inputs_with_special_tokens(
                 input_ids)
 
             output[self.INPUT_IDS_KEY][i] = input_ids
-            output[self.TOKEN_TYPE_IDS_KEY][i] = output[self.TOKEN_TYPE_IDS_KEY][i][:max_len]
-            output[self.ATTENTION_MASK_KEY][i] = [1] * max_len
+            output[self.TOKEN_TYPE_IDS_KEY][i] = output[self.TOKEN_TYPE_IDS_KEY][i][:self.max_length]
+            output[self.ATTENTION_MASK_KEY][i] = [1] * self.max_length
 
         return output
 
