@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, Union
 import torch
 from transformers import BertTokenizer
 
-from ..utils.functions import reduce_dict
+from ..utils.common import reduce_dict
 
 
 class InternalBertSumTokenizer(BertTokenizer):
@@ -65,7 +65,7 @@ class BertSumTokenizer:
                                                                   *args, **kwargs)
 
     def __call__(self, text: Union[List[str], List[List[str]]], *args, **kwargs) -> Dict[str, Union[List[List[int]], torch.Tensor]]:
-        if not (isinstance(text, list) and isinstance(text[0], (str, list))):
+        if not (isinstance(text, list) or isinstance(text[0], (str, list))):
             raise RuntimeError(
                 'text should be sentences or batch of sentences.')
 
