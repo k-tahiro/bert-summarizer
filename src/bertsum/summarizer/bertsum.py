@@ -43,11 +43,20 @@ class BeamSearch:
 
     @property
     def length_penalty(self):
-        return ((5.0 + self.seq_len) / 6.0)**self.alpha
+        return ((5.0 + self.seq_len) / 6.0) ** self.alpha
 
     @property
-    def length_penalty_for_eos(self):
-        return ((5.0 + self.seq_len - 1) / 6.0) ** self.alpha / self.length_penalty
+    def finished_length_penalty(self):
+        """ignore final token because it should be EOS token."""
+        return ((5.0 + self.seq_len - 1) / 6.0) ** self.alpha
+
+    @property
+    def scores(self):
+        return self.topk_log_probs.view(-1, self.beam_size) / self.length_penalty
+
+    @property
+    def finished_scores(self):
+        return self.topk_log_probs.view(-1, self.beam_size) / self.finished_length_penalty
 
     def initialize(self):
         self.alive_seq = torch.full([self.beam_batch_size, 1],
@@ -59,10 +68,17 @@ class BeamSearch:
                                          device=self.device)
         self.topk_log_probs[self.beam_offset] = 0.0
         self.hypothesis = [[] for _ in range(self.batch_size)]
+        self.results = [
+            {
+                'scores': [],
+                'predictions': []
+            }
+            for _ in self.batch_offset
+        ]
 
-    def run(self, log_probs: torch.Tensor):
+    def run(self, log_probs: torch.Tensor, is_final: bool = False):
         self.update_beam(log_probs)
-        self.finalize()
+        self.finalize(is_final)
 
     def update_beam(self, log_probs: torch.Tensor):
         vocab_size = log_probs.size(-1)
@@ -72,7 +88,8 @@ class BeamSearch:
 
         # Flatten probs into a list of possibilities.
         curr_scores = log_probs / self.length_penalty
-        curr_scores[:, self.eos_token_id] /= self.length_penalty_for_eos
+        curr_scores[:, self.eos_token_id] *= self.length_penalty
+        curr_scores[:, self.eos_token_id] /= self.finished_length_penalty
 
         if self.block_trigram:
             curr_scores = self._block_trigram(curr_scores)
@@ -88,7 +105,8 @@ class BeamSearch:
 
         for i, token_id in enumerate(topk_ids):
             if token_id == self.eos_token_id:
-                topk_scores[i] *= self.length_penalty_for_eos
+                topk_scores[i] *= self.finished_length_penalty
+                topk_scores[i] /= self.length_penalty
 
         # Recover log probs.
         self.topk_log_probs = topk_scores * self.length_penalty
@@ -114,7 +132,7 @@ class BeamSearch:
         # End condition is top beam is finished.
         end_condition = is_finished[:, 0].eq(True)
 
-        # Save finished hypotheses.
+        # Save finished hypothesis.
         if is_finished.any():
             for i in range(is_finished.size(0)):
                 b = self.batch_offset[i]
@@ -124,28 +142,29 @@ class BeamSearch:
 
                 # Store finished hypotheses for this batch.
                 for j in finished_hyp:
-                    hypotheses[b].append((topk_scores[i, j],
-                                          predictions[i, j, 1:]))
+                    self.hypothesis[b].append((self.finished_scores[i, j],
+                                               predictions[i, j, 1:] if is_final else predictions[i, j, 1:-1]))
 
-                # If the batch reached the end, save the n_best hypotheses.
+                # If the batch reached the end, save the n_best hypothesis.
                 if end_condition[i]:
-                    best_hyp = sorted(
-                        hypotheses[b], key=lambda x: x[0], reverse=True)
+                    best_hyp = sorted(self.hypothesis[b],
+                                      key=lambda x: x[0],
+                                      reverse=True)
                     score, pred = best_hyp[0]
 
-                    results["scores"][b].append(score)
-                    results["predictions"][b].append(pred)
+                    self.results["scores"][b].append(score)
+                    self.results["predictions"][b].append(pred)
             non_finished = end_condition.eq(0).nonzero().view(-1)
             # If all sentences are translated, no need to go further.
             if len(non_finished) == 0:
                 break
+
             # Remove finished batches for the next step.
-            topk_log_probs = topk_log_probs.index_select(
-                0, non_finished)
-            batch_index = batch_index.index_select(0, non_finished)
-            batch_offset = batch_offset.index_select(0, non_finished)
-            alive_seq = predictions.index_select(0, non_finished) \
-                .view(-1, alive_seq.size(-1))
+            self.topk_log_probs = self.topk_log_probs.index_select(0,
+                                                                   non_finished)
+            self.batch_offset = self.batch_offset.index_select(0, non_finished)
+            self.alive_seq = predictions.index_select(0, non_finished) \
+                                        .view(-1, self.alive_seq.size(-1))
 
     def _block_trigram(self, curr_scores: torch.Tensor) -> torch.Tensor:
         convert_ids_to_tokens = self.tokenizer.tokenizer.convert_ids_to_tokens
@@ -246,63 +265,17 @@ class BertSumAbsSummarizer(BertSumSummarizer):
                                            beam_search.beam_size,
                                            dim=0)
 
-            # Structure that holds finished hypotheses.
-            hypotheses = [[] for _ in range(batch_size)]  # noqa: F812
-
             for step in range(max_length):
                 log_probs = self._calc_token_probs(beam_search.alive_seq,
                                                    step,
                                                    memory,
                                                    memory_key_padding_mask,
                                                    min_length)
-                topk_ids = beam_search.get_topk_ids(log_probs)
+                beam_search.run(log_probs, step + 1 == max_length)
 
-                is_finished = topk_ids.eq(self.eos_token_id)
-                if step + 1 == max_length:
-                    is_finished.fill_(True)
-
-                # End condition is top beam is finished.
-                end_condition = is_finished[:, 0].eq(True)
-
-                # Save finished hypotheses.
-                if is_finished.any():
-                    predictions = alive_seq.view(-1,
-                                                 self.beam_size,
-                                                 alive_seq.size(-1))
-                    for i in range(is_finished.size(0)):
-                        b = batch_offset[i]
-                        if end_condition[i]:
-                            is_finished[i].fill_(1)
-                        finished_hyp = is_finished[i].nonzero().view(-1)
-                        # Store finished hypotheses for this batch.
-                        for j in finished_hyp:
-                            hypotheses[b].append((
-                                topk_scores[i, j],
-                                predictions[i, j, 1:]))
-                        # If the batch reached the end, save the n_best hypotheses.
-                        if end_condition[i]:
-                            best_hyp = sorted(
-                                hypotheses[b], key=lambda x: x[0], reverse=True)
-                            score, pred = best_hyp[0]
-
-                            results["scores"][b].append(score)
-                            results["predictions"][b].append(pred)
-                    non_finished = end_condition.eq(0).nonzero().view(-1)
-                    # If all sentences are translated, no need to go further.
-                    if len(non_finished) == 0:
-                        break
-                    # Remove finished batches for the next step.
-                    topk_log_probs = topk_log_probs.index_select(
-                        0, non_finished)
-                    batch_index = batch_index.index_select(0, non_finished)
-                    batch_offset = batch_offset.index_select(0, non_finished)
-                    alive_seq = predictions.index_select(0, non_finished) \
-                        .view(-1, alive_seq.size(-1))
                 # Reorder states.
                 select_indices = batch_index.view(-1)
                 src_features = src_features.index_select(0, select_indices)
-                dec_states.map_batch_fn(
-                    lambda state, dim: state.index_select(dim, select_indices))
 
     def _calc_token_probs(self,
                           alive_seq: torch.Tensor,
