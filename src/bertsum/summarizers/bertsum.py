@@ -207,7 +207,7 @@ class BertSumSummarizer:
             src = [src]
 
         batch_size = self.batch_size or len(src)
-        tgt = batch_size * ['']  # dummy target
+        tgt = batch_size * ['dummy']  # dummy target
         dataset = self.Dataset(src, tgt, self.model.model_type)
         return DataLoader(dataset, batch_size=batch_size)
 
