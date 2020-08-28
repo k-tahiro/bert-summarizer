@@ -102,9 +102,15 @@ class BertSumAbsSummarizer(BertSumSummarizer):
                 memory_key_padding_mask = memory_key_padding_mask.index_select(0,
                                                                                select_indices)
 
-            results.extend(beam_search.results)
+            results.extend(beam_search.hypothesis)
 
-        return results
+        return [
+            [
+                (hyp[0], self.tokenizer.convert_ids_to_tokens(hyp[1]))
+                for hyp in result
+            ]
+            for result in results
+        ]
 
     def _calc_token_probs(self,
                           alive_seq: torch.Tensor,

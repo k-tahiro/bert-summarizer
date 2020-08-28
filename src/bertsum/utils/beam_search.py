@@ -64,13 +64,6 @@ class BeamSearch:
                                          device=self.device)
         self.topk_log_probs[:, 0] = 0.0
         self.hypothesis = [[] for _ in range(self.batch_size)]
-        self.results = [
-            {
-                'scores': [],
-                'predictions': []
-            }
-            for _ in self.batch_offset
-        ]
         self.is_end = False
 
     def run(self, log_probs: torch.Tensor):
@@ -145,13 +138,8 @@ class BeamSearch:
 
                 # If the batch reached the end, save the n_best hypothesis.
                 if end_condition[i]:
-                    best_hyp = sorted(self.hypothesis[b],
-                                      key=lambda x: x[0],
-                                      reverse=True)
-                    score, pred = best_hyp[0]
-
-                    self.results[b]['scores'].append(score)
-                    self.results[b]['predictions'].append(pred)
+                    self.hypothesis[b].sort(key=lambda x: x[0],
+                                            reverse=True)
 
             non_finished = end_condition.eq(False).nonzero().view(-1)
             # If all sentences are translated, no need to go further.
