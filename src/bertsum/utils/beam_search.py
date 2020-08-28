@@ -2,14 +2,12 @@ from logging import getLogger
 from typing import Optional
 
 import torch
-from transformers import BertTokenizer
 
 logger = getLogger(__name__)
 
 
 class BeamSearch:
     def __init__(self,
-                 tokenizer: BertTokenizer,
                  batch_size: int,
                  bos_token_id: int,
                  eos_token_id: int,
@@ -17,7 +15,6 @@ class BeamSearch:
                  device: Optional[torch.device] = None,
                  alpha: float = .6,
                  block_trigram: bool = True):
-        self.tokenizer = tokenizer
         self.batch_size = batch_size
         self.bos_token_id = bos_token_id
         self.eos_token_id = eos_token_id
@@ -171,17 +168,13 @@ class BeamSearch:
                                         .view(-1, self.alive_seq.size(-1))
 
     def _block_trigram(self, curr_scores: torch.Tensor) -> torch.Tensor:
-        convert_ids_to_tokens = self.tokenizer.convert_ids_to_tokens
         cur_len = self.alive_seq.size(1)
-        if cur_len > 3:
+        if cur_len > 6:
             for i, token_ids in enumerate(self.alive_seq.tolist()):
-                words = convert_ids_to_tokens(token_ids)
-                words = ' '.join(words).replace(' ##', '').split()
-                if len(words) <= 3:
-                    continue
-                trigrams = [(words[j-2], words[j-1], words[j])
-                            for j in range(2, len(words))]
-                trigram = trigrams[-1]
-                if trigram in trigrams[:-1]:
-                    curr_scores[i] = float('-inf')
+                trigrams = [(token_ids[j-2], token_ids[j-1], token_ids[j])
+                            for j in range(2, len(token_ids))]
+                bigram = trigrams[-1][1:]
+                for trigram in trigrams:
+                    if bigram == trigram[:2]:
+                        curr_scores[i, trigram[2]] = float('-inf')
         return curr_scores

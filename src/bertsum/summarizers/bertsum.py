@@ -63,8 +63,7 @@ class BertSumAbsSummarizer(BertSumSummarizer):
              beam_size: int = 5,
              block_trigram: bool = True):
         max_length = max_length or self.model.encoder.config.max_position_embeddings
-        beam_search = BeamSearch(self.tokenizer,
-                                 data_loader.batch_size,
+        beam_search = BeamSearch(data_loader.batch_size,
                                  self.bos_token_id,
                                  self.eos_token_id,
                                  beam_size,
