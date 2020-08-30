@@ -32,13 +32,17 @@ class BertSumSummarizer:
         with torch.no_grad():
             return self._run(data_loader, *args, **kwargs)
 
-    def _create_data_loader(self, src: Union[str, List[str]]) -> DataLoader:
+    def _create_data_loader(self, src: Union[str, List[str], BertSumDataset]) -> DataLoader:
         if isinstance(src, str):
             src = [src]
-
         batch_size = self.batch_size or len(src)
-        tgt = batch_size * ['dummy']  # dummy target
-        dataset = self.Dataset(src, tgt, self.model.model_type)
+
+        if isinstance(src, (str, list)):
+            tgt = batch_size * ['dummy']  # dummy target
+            dataset = self.Dataset(src, tgt, self.model.model_type)
+        else:
+            dataset = src
+
         self.tokenizer = dataset.tgt_tokenizer.tokenizer
         self.bos_token_id = self.tokenizer.cls_token_id
         self.eos_token_id = self.tokenizer.sep_token_id
