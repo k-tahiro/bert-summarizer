@@ -7,6 +7,8 @@ logger = getLogger(__name__)
 
 
 class BeamSearch:
+    TRIGRAM_BLOCK_THRESHOLD = 3
+
     def __init__(self,
                  batch_size: int,
                  bos_token_id: int,
@@ -157,7 +159,7 @@ class BeamSearch:
 
     def _block_trigram(self, curr_scores: torch.Tensor) -> torch.Tensor:
         cur_len = self.alive_seq.size(1)
-        if cur_len > 6:
+        if cur_len > self.TRIGRAM_BLOCK_THRESHOLD:
             for i, token_ids in enumerate(self.alive_seq.tolist()):
                 trigrams = [(token_ids[j-2], token_ids[j-1], token_ids[j])
                             for j in range(2, len(token_ids))]
