@@ -118,22 +118,31 @@ class BertSumAbs(BertSum):
     def forward(self,
                 src: Dict[str, torch.Tensor],
                 tgt: Dict[str, torch.Tensor]) -> torch.Tensor:
-        # encode
-        memory = self.encoder(**src)[0]
+        # encoder -> decoder
+        logits = self._decode(tgt, self._encode(src))
 
-        # decode
-        tgt_key_padding_mask = tgt['attention_mask'] == 0
+        return logits
+
+    def _encode(self, src: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+        memory = self.encoder(**src)[0]
         memory_key_padding_mask = src['attention_mask'] == 0
+        return {
+            # sequence x batch x embedding
+            'memory': memory.permute(1, 0, 2).contiguous(),
+            'memory_key_padding_mask': memory_key_padding_mask
+        }
+
+    def _decode(self,
+                tgt: Dict[str, torch.Tensor],
+                decoder_args: Dict[str, torch.Tensor]) -> torch.Tensor:
+        tgt_key_padding_mask = tgt['attention_mask'] == 0
         tgt = self.embeddings(tgt['input_ids'])
         tgt = self.pos_emb(tgt)
 
         tgt = tgt.permute(1, 0, 2).contiguous()
-        memory = memory.permute(1, 0, 2).contiguous()
         x = self.decoder(tgt,
-                         memory,
                          tgt_key_padding_mask=tgt_key_padding_mask,
-                         memory_key_padding_mask=memory_key_padding_mask)
+                         **decoder_args)
         x = x.permute(1, 0, 2).contiguous()
 
-        x = self.generator(x)
-        return x
+        return self.generator(x)
