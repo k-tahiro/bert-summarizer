@@ -14,7 +14,7 @@ class BertSumDataset(Dataset):
     TGT_SEP_TOKEN = '[unused2]'
     TGT_ADDITIONAL_SPECIAL_TOKENS = ['[unused3]']
 
-    def __init__(self, src: List[str], tgt: List[str], model_type: str, return_label: bool = True):
+    def __init__(self, src: List[str], tgt: List[str], model_type: str, return_labels: bool = True):
         if len(src) != len(tgt):
             raise RuntimeError('Different length src v.s. tgt pair is given.')
 
@@ -38,7 +38,7 @@ class BertSumDataset(Dataset):
                 vocab_size += 1
         self.vocab_size = vocab_size
 
-        self.return_label = return_label
+        self.return_labels = return_labels
 
     def _init_nlp(self, model_type: str):
         if 'japanese' in model_type:
@@ -106,7 +106,7 @@ class BertSumAbsDataset(BertSumDataset):
             for k, v in tgt.items()
         })
 
-        if self.return_label:
+        if self.return_labels:
             data['label_ids'] = tgt['input_ids'][1:]  # skip first token
 
         return data
