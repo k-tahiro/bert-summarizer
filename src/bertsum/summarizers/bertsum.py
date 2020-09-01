@@ -39,7 +39,10 @@ class BertSumSummarizer:
 
         if isinstance(src, (str, list)):
             tgt = batch_size * ['dummy']  # dummy target
-            dataset = self.Dataset(src, tgt, self.model.model_type)
+            dataset = self.Dataset(src,
+                                   tgt,
+                                   self.model.model_type,
+                                   return_labels=False)
         else:
             dataset = src
 
@@ -76,8 +79,14 @@ class BertSumAbsSummarizer(BertSumSummarizer):
                                  block_trigram)
 
         results = []
-        for src, _ in data_loader:
+        for batch in data_loader:
             beam_search.initialize()
+
+            src = {
+                k.replace('src_', ''): v
+                for k, v in batch.items()
+                if k.startswith('src_')
+            }
 
             memory, _ = self.model.encoder(**src)
             memory = memory.permute(1, 0, 2).contiguous()
