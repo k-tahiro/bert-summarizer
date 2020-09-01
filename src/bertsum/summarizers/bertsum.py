@@ -27,7 +27,7 @@ class BertSumSummarizer:
         self.batch_size = batch_size
         self.device = device
 
-    def __call__(self, src: Union[str, List[str]], *args, **kwargs) -> dict:
+    def __call__(self, src: Union[str, List[str], BertSumDataset], *args, **kwargs) -> dict:
         data_loader = self._create_data_loader(src)
         with torch.no_grad():
             return self._run(data_loader, *args, **kwargs)
