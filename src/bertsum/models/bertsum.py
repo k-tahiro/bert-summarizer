@@ -119,14 +119,29 @@ class BertSumAbs(BertSum):
                                reduction='sum')
 
     def forward(self,
-                src: Dict[str, torch.Tensor],
-                tgt: Dict[str, torch.Tensor],
-                output_loss: bool = False) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
+                src_input_ids: torch.Tensor,
+                src_token_type_ids: torch.Tensor,
+                src_attention_mask: torch.Tensor,
+                tgt_input_ids: torch.Tensor,
+                tgt_token_type_ids: torch.Tensor,
+                tgt_attention_mask: torch.Tensor,
+                labels: Optional[torch.Tensor] = None) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
+        src = {
+            'input_ids': src_input_ids,
+            'token_type_ids': src_token_type_ids,
+            'attention_mask': src_attention_mask
+        }
+        tgt = {
+            'input_ids': tgt_input_ids,
+            'token_type_ids': tgt_token_type_ids,
+            'attention_mask': tgt_attention_mask
+        }
+
         # encoder -> decoder
         logits = self._decode(tgt, self._encode(src))
 
-        if output_loss:
-            loss = self._calc_loss(logits[:, :-1], tgt['input_ids'][:, 1:])
+        if labels is not None:
+            loss = self._calc_loss(logits[:, :-1].contiguous(), labels)
             return loss, logits
         else:
             return logits
@@ -155,11 +170,11 @@ class BertSumAbs(BertSum):
 
         return self.generator(x)
 
-    def _calc_loss(self, output: torch.Tensor, gtruth: torch.Tensor) -> torch.Tensor:
+    def _calc_loss(self, output: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
         # batch x sequence x embedding -> batch_sequence x embedding
         output = output.view(-1, output.size(-1))
 
         # batch x sequence -> batch_sequence
-        gtruth = gtruth.view(-1)
+        target = labels.view(-1)
 
-        return self.loss(output, gtruth)
+        return self.loss(output, target)
