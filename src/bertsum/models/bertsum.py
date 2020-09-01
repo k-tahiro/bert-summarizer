@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from transformers import AutoModel
 import torch
@@ -115,13 +115,21 @@ class BertSumAbs(BertSum):
             nn.LogSoftmax(dim=-1)
         )
 
+        self.loss = nn.NLLLoss(ignore_index=self.encoder.config.pad_token_id,
+                               reduction='sum')
+
     def forward(self,
                 src: Dict[str, torch.Tensor],
-                tgt: Dict[str, torch.Tensor]) -> torch.Tensor:
+                tgt: Dict[str, torch.Tensor],
+                output_loss: bool = False) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
         # encoder -> decoder
         logits = self._decode(tgt, self._encode(src))
 
-        return logits
+        if output_loss:
+            loss = self._calc_loss(logits[:, :-1], tgt['input_ids'][:, 1:])
+            return loss, logits
+        else:
+            return logits
 
     def _encode(self, src: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
         memory = self.encoder(**src)[0]
@@ -146,3 +154,12 @@ class BertSumAbs(BertSum):
         x = x.permute(1, 0, 2).contiguous()
 
         return self.generator(x)
+
+    def _calc_loss(self, output: torch.Tensor, gtruth: torch.Tensor) -> torch.Tensor:
+        # batch x sequence x embedding -> batch_sequence x embedding
+        output = output.view(-1, output.size(-1))
+
+        # batch x sequence -> batch_sequence
+        gtruth = gtruth.view(-1)
+
+        return self.loss(output, gtruth)
