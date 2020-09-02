@@ -38,11 +38,7 @@ class BertSumSummarizer:
         batch_size = self.batch_size or len(src)
 
         if isinstance(src, (str, list)):
-            tgt = batch_size * ['dummy']  # dummy target
-            dataset = self.Dataset(src,
-                                   tgt,
-                                   self.model.model_type,
-                                   return_labels=False)
+            dataset = self.Dataset(self.model.model_type, src)
         else:
             dataset = src
 
