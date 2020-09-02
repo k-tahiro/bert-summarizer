@@ -91,6 +91,9 @@ class BertSumDataset(Dataset):
 
         return src, tgt
 
+    def get_translator(self):
+        return self.tgt_tokenizer.tokenizer.convert_ids_to_tokens
+
 
 class BertSumExtDataset(BertSumDataset):
     def transform(self, src_txt: str, tgt_txt: Optional[str] = None):
