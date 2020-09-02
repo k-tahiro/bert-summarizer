@@ -3,7 +3,7 @@ from typing import Dict, List, Optional, Union
 
 import torch
 from torch import nn
-from transformers import BertConfig, BertModel, EncoderDecoderConfig, EncoderDecoderModel
+from transformers import BertConfig, BertModel, BertLMHeadModel, EncoderDecoderConfig, EncoderDecoderModel
 
 from .common import PositionalEncoding
 
@@ -77,7 +77,9 @@ class BertSumAbs(EncoderDecoderModel):
                  attention_probs_dropout_prob: float = 0.2,
                  layer_norm_eps: float = 1e-6):
         encoder = BertModel.from_pretrained(model_type)
-        decoder_config = BertConfig(vocab_size=vocab_size or encoder.config.vocab_size,
+        decoder_config = BertConfig(is_decoder=True,
+                                    add_cross_attention=True,
+                                    vocab_size=vocab_size or encoder.config.vocab_size,
                                     hidden_size=encoder.config.hidden_size,
                                     num_hidden_layers=num_hidden_layers,
                                     num_attention_heads=num_attention_heads,
@@ -89,6 +91,5 @@ class BertSumAbs(EncoderDecoderModel):
                                     type_vocab_size=encoder.config.type_vocab_size,
                                     initializer_range=encoder.config.initializer_range,
                                     layer_norm_eps=layer_norm_eps)
-        config = EncoderDecoderConfig.from_encoder_decoder_configs(encoder.config,
-                                                                   decoder_config)
-        super(BertSumAbs, self).__init__(config=config, encoder=encoder)
+        decoder = BertLMHeadModel(decoder_config)
+        super(BertSumAbs, self).__init__(encoder=encoder, decoder=decoder)
