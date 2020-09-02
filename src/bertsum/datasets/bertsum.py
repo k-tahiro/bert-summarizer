@@ -100,17 +100,14 @@ class BertSumExtDataset(BertSumDataset):
 class BertSumAbsDataset(BertSumDataset):
     def transform(self, src_txt: str, tgt_txt: Optional[str] = None) -> Dict[str, torch.Tensor]:
         src, tgt = self._transform(src_txt, tgt_txt)
-        data = {
-            f'src_{k}': v
-            for k, v in src.items()
-        }
+        data = src
 
         if tgt is not None:
             data.update({
-                f'tgt_{k}': v
+                f'decoder_{k}': v
                 for k, v in tgt.items()
             })
 
-            data['label_ids'] = tgt['input_ids'][1:]  # skip first token
+            data['label_ids'] = tgt['input_ids']
 
         return data
