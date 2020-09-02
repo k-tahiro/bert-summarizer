@@ -6,7 +6,7 @@ import torch
 from torch import nn
 
 from .common import PositionalEncoding
-from .decoders.transformer import TransformerDecoder
+from .decoders import TransformerDecoder
 
 logger = getLogger(__name__)
 
