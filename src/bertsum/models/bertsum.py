@@ -10,13 +10,7 @@ from .common import PositionalEncoding
 logger = getLogger(__name__)
 
 
-class BertSum(nn.Module):
-    def __init__(self, model_type: str):
-        super(BertSum, self).__init__()
-        self.model_type = model_type
-
-
-class BertSumExt(BertSum):
+class BertSumExt(nn.Module):
     def __init__(self,
                  model_type: str,
                  cls_token_id: int,
