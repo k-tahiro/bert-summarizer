@@ -6,6 +6,7 @@ import torch
 from torch import nn
 
 from .common import PositionalEncoding
+from .decoders.transformer import TransformerDecoder
 
 logger = getLogger(__name__)
 
@@ -89,31 +90,19 @@ class BertSumAbs(BertSum):
         self.encoder = AutoModel.from_pretrained(model_type)
         hidden_size = self.encoder.config.hidden_size
 
-        # decoder embedding
-        vocab_size = vocab_size or self.encoder.config.vocab_size
-        self.embeddings = nn.Embedding(vocab_size,
-                                       hidden_size,
-                                       padding_idx=self.encoder.config.pad_token_id)
-        self.pos_emb = PositionalEncoding(dropout,
-                                          self.embeddings.embedding_dim)
-
         # decoder
-        decoder_layer = nn.TransformerDecoderLayer(d_model=hidden_size,
-                                                   nhead=nhead,
-                                                   dim_feedforward=dim_feedforward,
-                                                   dropout=dropout,
-                                                   activation=activation)
-        if norm is None and eps:
-            norm = nn.LayerNorm(hidden_size, eps=eps)
-        self.decoder = nn.TransformerDecoder(decoder_layer,
-                                             num_layers=num_layers,
-                                             norm=norm)
-
-        # generator
-        self.generator = nn.Sequential(
-            nn.Linear(hidden_size, vocab_size, bias=bias),
-            nn.LogSoftmax(dim=-1)
-        )
+        vocab_size = vocab_size or self.encoder.config.vocab_size
+        self.decoder = TransformerDecoder(vocab_size,
+                                          hidden_size,
+                                          self.encoder.config.pad_token_id,
+                                          nhead,
+                                          dim_feedforward,
+                                          dropout,
+                                          activation,
+                                          num_layers,
+                                          norm,
+                                          eps,
+                                          bias)
 
         self.loss = nn.NLLLoss(ignore_index=self.encoder.config.pad_token_id,
                                reduction='sum')
@@ -159,16 +148,9 @@ class BertSumAbs(BertSum):
                 tgt: Dict[str, torch.Tensor],
                 decoder_args: Dict[str, torch.Tensor]) -> torch.Tensor:
         tgt_key_padding_mask = tgt['attention_mask'] == 0
-        tgt = self.embeddings(tgt['input_ids'])
-        tgt = self.pos_emb(tgt)
-
-        tgt = tgt.permute(1, 0, 2).contiguous()
-        x = self.decoder(tgt,
-                         tgt_key_padding_mask=tgt_key_padding_mask,
-                         **decoder_args)
-        x = x.permute(1, 0, 2).contiguous()
-
-        return self.generator(x)
+        return self.decoder(tgt['input_ids'],
+                            tgt_key_padding_mask=tgt_key_padding_mask,
+                            **decoder_args)
 
     def _calc_loss(self, output: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
         # batch x sequence x embedding -> batch_sequence x embedding

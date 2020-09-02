@@ -129,15 +129,8 @@ class BertSumAbsSummarizer(BertSumSummarizer):
                           min_length: int) -> torch.Tensor:
         # decode
         logger.debug(f'{alive_seq.size()=}')
-        tgt = self.model.embeddings(alive_seq)
-        tgt = self.model.pos_emb(tgt, step=step)
-        tgt = tgt.permute(1, 0, 2).contiguous()
-        dec_out = self.model.decoder(tgt, memory,
-                                     memory_key_padding_mask=memory_key_padding_mask)
-
-        # Generator forward.
-        dec_out = dec_out.permute(1, 0, 2).contiguous()
-        log_probs = self.model.generator(dec_out)
+        log_probs = self.model.decoder(alive_seq, memory,
+                                       memory_key_padding_mask=memory_key_padding_mask)
         log_probs[:, :min_length+1, self.eos_token_id] = float('-inf')
         log_probs = log_probs.index_select(1, torch.tensor(log_probs.size(1)-1)) \
                              .squeeze()  # select final position
