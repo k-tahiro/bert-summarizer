@@ -65,7 +65,7 @@ class EncoderDecoderTrainer(Trainer):
                     if not any(nd in name for nd in cls.NO_DECAY)
                 ],
                 'weight_decay': weight_decay,
-                'learning_rate': learning_rate
+                'lr': learning_rate
             },
             {
                 'params': [
@@ -74,6 +74,6 @@ class EncoderDecoderTrainer(Trainer):
                     if any(nd in name for nd in cls.NO_DECAY)
                 ],
                 'weight_decay': 0.0,
-                'learning_rate': learning_rate
+                'lr': learning_rate
             },
         ]
