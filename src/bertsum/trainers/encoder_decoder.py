@@ -29,7 +29,6 @@ class EncoderDecoderTrainer(Trainer):
             params = encoder_params + decoder_params
             self.optimizer = AdamW(
                 params,
-                betas=(self.args.adam_beta1, self.args.adam_beta2),
                 eps=self.args.adam_epsilon,
             )
 
