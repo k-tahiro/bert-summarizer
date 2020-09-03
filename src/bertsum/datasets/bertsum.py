@@ -92,7 +92,13 @@ class BertSumDataset(Dataset):
         return src, tgt
 
     def get_translator(self):
-        return self.tgt_tokenizer.tokenizer.convert_ids_to_tokens
+        def translator(token_ids: List[int]) -> str:
+            tokenizer = self.tgt_tokenizer.tokenizer
+            return tokenizer.decode(token_ids,
+                                    skip_special_tokens=True,
+                                    clean_up_tokenization_spaces=True)
+
+        return translator
 
 
 class BertSumExtDataset(BertSumDataset):
