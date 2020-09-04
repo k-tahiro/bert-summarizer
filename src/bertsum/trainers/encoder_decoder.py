@@ -12,7 +12,7 @@ class EncoderDecoderTrainer(Trainer):
     def __init__(self,
                  model: PreTrainedModel,
                  args: TrainingArguments,
-                 encoder_learning_rate: float = 0.0002,
+                 encoder_learning_rate: float = 0.002,
                  decoder_learning_rate: float = 0.2,
                  encoder_warmup_steps: int = 20000,
                  decoder_warmup_steps: int = 10000,
