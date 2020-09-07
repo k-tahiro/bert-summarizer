@@ -1,6 +1,10 @@
 from copy import deepcopy
+from logging import getLogger
 
 from transformers import BertConfig, BertTokenizer, EncoderDecoderConfig
+
+
+logger = getLogger(__name__)
 
 
 class BertSumExtConfig(BertConfig):
@@ -33,6 +37,9 @@ class BertSumAbsConfig(EncoderDecoderConfig):
         decoder_config.update(kwargs)
         decoder_config['is_decoder'] = True
         decoder_config['add_cross_attention'] = True
+
+        logger.info(f'{encoder_config=}')
+        logger.info(f'{decoder_config=}')
 
         super().__init__(encoder=encoder_config, decoder=decoder_config)
         self.base_model_name_or_path = base_model_name_or_path
