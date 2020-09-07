@@ -32,12 +32,12 @@ class BertSumAbsConfig(EncoderDecoderConfig):
         **kwargs
     ):
         if 'encoder' in kwargs:
-            encoder_config = kwargs['encoder']
+            encoder_config = kwargs.pop('encoder')
         else:
             encoder_config = BertConfig.from_pretrained(base_model_name_or_path) \
                                        .to_dict()
         if 'decoder' in kwargs:
-            decoder_config = kwargs['decoder']
+            decoder_config = kwargs.pop('decoder')
         else:
             decoder_config = deepcopy(encoder_config)
             decoder_config.update(kwargs)
