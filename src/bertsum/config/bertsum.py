@@ -31,12 +31,18 @@ class BertSumAbsConfig(EncoderDecoderConfig):
         base_model_name_or_path: str = 'bert-base-uncased',
         **kwargs
     ):
-        encoder_config = BertConfig.from_pretrained(base_model_name_or_path) \
-                                   .to_dict()
-        decoder_config = deepcopy(encoder_config)
-        decoder_config.update(kwargs)
-        decoder_config['is_decoder'] = True
-        decoder_config['add_cross_attention'] = True
+        if 'encoder' in kwargs:
+            encoder_config = kwargs['encoder']
+        else:
+            encoder_config = BertConfig.from_pretrained(base_model_name_or_path) \
+                                       .to_dict()
+        if 'decoder' in kwargs:
+            decoder_config = kwargs['decoder']
+        else:
+            decoder_config = deepcopy(encoder_config)
+            decoder_config.update(kwargs)
+            decoder_config['is_decoder'] = True
+            decoder_config['add_cross_attention'] = True
 
         logger.info(f'{encoder_config=}')
         logger.info(f'{decoder_config=}')
