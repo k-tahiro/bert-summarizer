@@ -1,17 +1,25 @@
 from copy import deepcopy
 
-from transformers import BertConfig, EncoderDecoderConfig
+from transformers import BertConfig, BertTokenizer, EncoderDecoderConfig
 
 
 class BertSumExtConfig(BertConfig):
-    def __init__(self, pretrained_model_name_or_path, cls_token_id, **kwargs):
-        config = BertConfig.from_pretrained(pretrained_model_name_or_path) \
+    def __init__(
+        self,
+        bertsum_pretrained_model_name_or_path: str = 'bert-base-uncased',
+        **kwargs
+    ):
+        config = BertConfig.from_pretrained(bertsum_pretrained_model_name_or_path) \
                            .to_dict()
         config.update(kwargs)
 
         super().__init__(**config)
-        self.pretrained_model_name_or_path = pretrained_model_name_or_path
-        self.cls_token_id = cls_token_id
+
+        tokenizer = BertTokenizer.from_pretrained(
+            bertsum_pretrained_model_name_or_path)
+
+        self.bertsum_pretrained_model_name_or_path = bertsum_pretrained_model_name_or_path
+        self.cls_token_id = tokenizer.cls_token_id
 
 
 class BertSumAbsConfig(EncoderDecoderConfig):
