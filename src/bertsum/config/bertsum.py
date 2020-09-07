@@ -15,8 +15,12 @@ class BertSumExtConfig(BertConfig):
 
 
 class BertSumAbsConfig(EncoderDecoderConfig):
-    def __init__(self, pretrained_model_name_or_path, **kwargs):
-        encoder_config = BertConfig.from_pretrained(pretrained_model_name_or_path) \
+    def __init__(
+        self,
+        bertsum_pretrained_model_name_or_path: str = 'bert-base-uncased',
+        **kwargs
+    ):
+        encoder_config = BertConfig.from_pretrained(bertsum_pretrained_model_name_or_path) \
                                    .to_dict()
         decoder_config = deepcopy(encoder_config)
         decoder_config.update(kwargs)
@@ -24,4 +28,4 @@ class BertSumAbsConfig(EncoderDecoderConfig):
         decoder_config['add_cross_attention'] = True
 
         super().__init__(encoder=encoder_config, decoder=decoder_config)
-        self.pretrained_model_name_or_path = pretrained_model_name_or_path
+        self.bertsum_pretrained_model_name_or_path = bertsum_pretrained_model_name_or_path
