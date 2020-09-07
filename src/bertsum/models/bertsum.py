@@ -26,8 +26,7 @@ class BertSumExt(BertPreTrainedModel):
     def __init__(self, config: BertSumExtConfig):
         super().__init__(config)
 
-        self.bert = BertModel.from_pretrained(
-            config.pretrained_model_name_or_path)
+        self.bert = BertModel.from_pretrained(config.base_model_name_or_path)
 
         self.encoder = nn.Sequential(
             BertEncoder(config),
@@ -59,8 +58,7 @@ class BertSumAbs(EncoderDecoderModel):
         decoder: Optional[BertPreTrainedModel] = None
     ):
         if config is not None:
-            encoder = BertModel.from_pretrained(
-                config.pretrained_model_name_or_path)
+            encoder = BertModel.from_pretrained(config.base_model_name_or_path)
             decoder = BertLMHeadModel(config.decoder)
 
             super().__init__(encoder=encoder, decoder=decoder)
