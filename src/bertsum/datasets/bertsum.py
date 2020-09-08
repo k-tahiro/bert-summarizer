@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 from torch.utils.data import Dataset
@@ -14,13 +14,20 @@ class BertSumDataset(Dataset):
     TGT_SEP_TOKEN = '[unused2]'
     TGT_ADDITIONAL_SPECIAL_TOKENS = ['[unused3]']
 
-    def __init__(self, model_type: str, src: List[str], tgt: Optional[List[str]] = None):
+    def __init__(
+        self,
+        model_type: str,
+        src: List[str],
+        tgt: Optional[List[str]] = None,
+        return_tensors: Optional[str] = None
+    ):
         if tgt is not None and len(src) != len(tgt):
             raise RuntimeError('Different length src v.s. tgt pair is given.')
 
         self.n_len = len(src)
         self.src = src
         self.tgt = tgt
+        self.return_tensors = return_tensors
 
         self._init_nlp(model_type)
 
@@ -61,15 +68,15 @@ class BertSumDataset(Dataset):
     def transform(self, src_txt: str, tgt_txt: Optional[str] = None):
         raise NotImplementedError('BertSumDataset cannot be used directly.')
 
-    def _transform(self,
-                   src_txt: str,
-                   tgt_txt: Optional[str] = None) -> Tuple[Dict[str, torch.Tensor], Optional[Dict[str, torch.Tensor]]]:
+    def _transform(
+        self,
+        src_txt: str,
+        tgt_txt: Optional[str] = None
+    ) -> Tuple[Dict[str, Union[List[int], torch.Tensor]], Optional[Dict[str, Union[List[int], torch.Tensor]]]]:
         # transform src
         src = list(map(str, self.nlp(src_txt).sents))
-        src = self.src_tokenizer(src,
-                                 padding='max_length',
-                                 truncation=True,
-                                 return_tensors='pt')
+
+        src = self.src_tokenizer(src, **self.tokenize_args)
         src = {
             k: v[0]
             for k, v in src.items()
@@ -80,10 +87,7 @@ class BertSumDataset(Dataset):
             tgt = None
         else:
             tgt = list(map(str, self.nlp(tgt_txt).sents))
-            tgt = self.tgt_tokenizer(tgt,
-                                     padding='max_length',
-                                     truncation=True,
-                                     return_tensors='pt')
+            tgt = self.tgt_tokenizer(tgt, **self.tokenize_args)
             tgt = {
                 k: v[0]
                 for k, v in tgt.items()
@@ -91,12 +95,24 @@ class BertSumDataset(Dataset):
 
         return src, tgt
 
-    def get_translator(self):
+    @property
+    def tokenize_args(self):
+        tokenize_args = dict(truncation=True)
+        if self.return_tensors is not None:
+            tokenize_args.update(dict(padding='max_length',
+                                      return_tensors=self.return_tensors))
+        return tokenize_args
+
+    @property
+    def tokenizer(self):
+        return self.tgt_tokenizer.tokenizer
+
+    @property
+    def translator(self):
         def translator(token_ids: List[int]) -> str:
-            tokenizer = self.tgt_tokenizer.tokenizer
-            return tokenizer.decode(token_ids,
-                                    skip_special_tokens=True,
-                                    clean_up_tokenization_spaces=True)
+            return self.tokenizer.decode(token_ids,
+                                         skip_special_tokens=True,
+                                         clean_up_tokenization_spaces=True)
 
         return translator
 
@@ -107,7 +123,7 @@ class BertSumExtDataset(BertSumDataset):
 
 
 class BertSumAbsDataset(BertSumDataset):
-    def transform(self, src_txt: str, tgt_txt: Optional[str] = None) -> Dict[str, torch.Tensor]:
+    def transform(self, src_txt: str, tgt_txt: Optional[str] = None) -> Dict[str, Union[List[int], torch.Tensor]]:
         src, tgt = self._transform(src_txt, tgt_txt)
         data = src
 
