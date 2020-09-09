@@ -63,8 +63,6 @@ class BertSumAbs(EncoderDecoderModel):
             )
             decoder = BertLMHeadModel(config.decoder)
 
-            super().__init__(encoder=encoder, decoder=decoder)
-        else:
-            super().__init__(config=config, encoder=encoder, decoder=decoder)
+        super().__init__(config=config, encoder=encoder, decoder=decoder)
 
         # TODO: copy encoder emmbedding layer to decoder embedding and Linear layer
