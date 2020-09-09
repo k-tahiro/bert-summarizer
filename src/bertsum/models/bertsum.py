@@ -34,8 +34,6 @@ class BertSumExt(BertPreTrainedModel):
         )
         self.cls = BertOnlyMLMHead(config)
 
-        self.init_weights()
-
     def forward(self,
                 src: Dict[str, torch.Tensor],
                 cls_idxs: Union[None, List[List[int]], torch.Tensor] = None):
