@@ -28,13 +28,13 @@ class BertSumExtConfig(BertConfig):
 class BertSumAbsConfig(EncoderDecoderConfig):
     def __init__(
         self,
-        base_model_name_or_path: str = 'bert-base-uncased',
+        encoder_model_name_or_path: str = 'bert-base-uncased',
         **kwargs
     ):
         if 'encoder' in kwargs:
             encoder_config = kwargs.pop('encoder')
         else:
-            encoder_config = BertConfig.from_pretrained(base_model_name_or_path) \
+            encoder_config = BertConfig.from_pretrained(encoder_model_name_or_path) \
                                        .to_dict()
         if 'decoder' in kwargs:
             decoder_config = kwargs.pop('decoder')
@@ -48,4 +48,4 @@ class BertSumAbsConfig(EncoderDecoderConfig):
         logger.info(f'{decoder_config=}')
 
         super().__init__(encoder=encoder_config, decoder=decoder_config)
-        self.base_model_name_or_path = base_model_name_or_path
+        self.encoder_model_name_or_path = encoder_model_name_or_path

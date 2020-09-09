@@ -58,7 +58,9 @@ class BertSumAbs(EncoderDecoderModel):
         decoder: Optional[BertPreTrainedModel] = None
     ):
         if config is not None:
-            encoder = BertModel.from_pretrained(config.base_model_name_or_path)
+            encoder = BertModel.from_pretrained(
+                config.encoder_model_name_or_path
+            )
             decoder = BertLMHeadModel(config.decoder)
 
             super().__init__(encoder=encoder, decoder=decoder)
