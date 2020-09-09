@@ -1,12 +1,19 @@
-from typing import Dict, List, Union
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Union
 
 import torch
 from transformers import DataCollatorWithPadding, PreTrainedTokenizer, PreTrainedTokenizerFast
 
 
+@dataclass
 class EncoderDecoderDataCollatorWithPadding(DataCollatorWithPadding):
-    decoder_tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast]
+    decoder_tokenizer: Optional[Union[PreTrainedTokenizer,
+                                      PreTrainedTokenizerFast]] = None
     generate_labels: bool = False
+
+    def __post_init__(self):
+        if self.decoder_tokenizer is None:
+            self.decoder_tokenizer = self.tokenizer
 
     def __call__(self, features: List[Dict[str, Union[List[int], torch.Tensor]]]) -> Dict[str, torch.Tensor]:
         encoder_features = []
