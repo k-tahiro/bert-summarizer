@@ -91,9 +91,10 @@ class BertSumTokenizer:
 
         if truncation:
             output = self._truncate(output)
-        output = self.tokenizer.pad(output,
-                                    padding=padding,
-                                    max_length=self.max_length)
+        if padding:
+            output = self.tokenizer.pad(output,
+                                        padding=padding,
+                                        max_length=self.max_length)
         output = self._return_tensors(output, return_tensors)
         return output
 
