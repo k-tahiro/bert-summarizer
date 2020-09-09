@@ -17,7 +17,7 @@ class EncoderDecoderDataCollatorWithPadding(DataCollatorWithPadding):
             decoder_feature = dict()
             for k, v in feature.items():
                 if k.startswith('decoder_'):
-                    decoder_feature[k] = v
+                    decoder_feature[k[len('decoder_'):]] = v
                 else:
                     encoder_feature[k] = v
             encoder_features.append(encoder_feature)
