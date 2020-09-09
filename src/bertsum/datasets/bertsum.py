@@ -133,6 +133,4 @@ class BertSumAbsDataset(BertSumDataset):
                 for k, v in tgt.items()
             })
 
-            data['label_ids'] = tgt['input_ids']
-
         return data
