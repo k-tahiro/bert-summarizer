@@ -1,10 +1,10 @@
+from functools import partial, reduce
 from logging import getLogger
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Union
 
-import torch
 from torch.utils.data import Dataset
 
-from ..tokenizer import BertSumTokenizer
+from ..tokenizer import AutoBertSumTokenizer, BertSumTokenizer, BertSumJapaneseTokenizer
 
 logger = getLogger(__name__)
 
@@ -18,30 +18,40 @@ class BertSumDataset(Dataset):
         self,
         model_type: str,
         src: List[str],
-        tgt: Optional[List[str]] = None,
-        return_tensors: Optional[str] = None
+        tgt: Optional[List[str]] = None
     ):
         if tgt is not None and len(src) != len(tgt):
             raise RuntimeError('Different length src v.s. tgt pair is given.')
 
-        self.n_len = len(src)
-        self.src = src
-        self.tgt = tgt
-        self.return_tensors = return_tensors
-
         self._init_nlp(model_type)
-
-        self.src_tokenizer = BertSumTokenizer(model_type)
-        self.tgt_tokenizer = BertSumTokenizer(
+        src_tokenizer = AutoBertSumTokenizer.from_pretrained(model_type)
+        tgt_tokenizer = AutoBertSumTokenizer.from_pretrained(
             model_type,
             cls_token=self.TGT_CLS_TOKEN,
             sep_token=self.TGT_SEP_TOKEN,
             additional_special_tokens=self.TGT_ADDITIONAL_SPECIAL_TOKENS
         )
 
-        vocab_size = self.tgt_tokenizer.tokenizer.vocab_size
+        # create data
+        encoded_src = self._encode(src_tokenizer, src)
+        self.data = encoded_src
+        if tgt is not None:
+            encoded_tgt = self._encode(tgt_tokenizer, tgt)
+            data = []
+            for e_src, e_tgt in zip(encoded_src, encoded_tgt):
+                sample = e_src
+                sample.update({
+                    f'decoder_{k}': v
+                    for k, v in e_tgt.items()
+                })
+                data.append(sample)
+            self.data = data
+
+        # set meta objects
+        self.tokenizer = tgt_tokenizer
+        vocab_size = self.tokenizer.vocab_size
         for token in [self.TGT_CLS_TOKEN, self.TGT_SEP_TOKEN] + self.TGT_ADDITIONAL_SPECIAL_TOKENS:
-            if token not in self.tgt_tokenizer.tokenizer.vocab:
+            if token not in self.tokenizer.vocab:
                 vocab_size += 1
         self.vocab_size = vocab_size
 
@@ -57,80 +67,99 @@ class BertSumDataset(Dataset):
 
         self.nlp = nlp
 
-    def __len__(self) -> int:
-        return self.n_len
-
-    def __getitem__(self, idx: int):
-        src_txt = self.src[idx]
-        tgt_txt = self.tgt[idx] if self.tgt is not None else None
-        return self.transform(src_txt, tgt_txt)
-
-    def transform(self, src_txt: str, tgt_txt: Optional[str] = None):
-        raise NotImplementedError('BertSumDataset cannot be used directly.')
-
-    def _transform(
+    def _encode(
         self,
-        src_txt: str,
-        tgt_txt: Optional[str] = None
-    ) -> Tuple[Dict[str, Union[List[int], torch.Tensor]], Optional[Dict[str, Union[List[int], torch.Tensor]]]]:
-        # transform src
-        src = list(map(str, self.nlp(src_txt).sents))
+        tokenizer: Union[BertSumTokenizer, BertSumJapaneseTokenizer],
+        data: List[str],
+    ) -> List[Dict[str, List[int]]]:
+        concat_sents = partial(self._concat_sents, tokenizer)
+        truncate = partial(self._truncate, tokenizer)
 
-        src = self.src_tokenizer(src, **self.tokenize_args)
-        src = {
-            k: v[0]
-            for k, v in src.items()
+        encoded_data = []
+        for text in data:
+            sents = list(map(str, self.nlp(text).sents))
+            n_sents = len(sents)
+            sent_pairs = sum(divmod(n_sents, 2))
+            outputs = []
+            for i in range(sent_pairs):
+                index_0 = 2 * i
+                index_1 = index_0 + 1
+                sent_0 = sents[index_0]
+                if index_1 < n_sents:
+                    sent_1 = sents[index_1]
+                    output = tokenizer(sent_0, sent_1)
+                else:
+                    output = tokenizer(sent_0)
+                outputs.append(output)
+
+            encoded_data.append(truncate(reduce(concat_sents, outputs)))
+        return encoded_data
+
+    @staticmethod
+    def _concat_sents(
+        tokenizer: Union[BertSumTokenizer, BertSumJapaneseTokenizer],
+        output_0: Dict[str, List[int]],
+        output_1: Dict[str, List[int]]
+    ) -> Dict[str, List[int]]:
+        input_ids_0 = output_0['input_ids'][1:-1]
+        input_ids_1 = output_1['input_ids'][1:-1]
+        input_ids = tokenizer.build_inputs_with_special_tokens(input_ids_0,
+                                                               input_ids_1)
+
+        sent_sep_token_ids = tokenizer.get_sent_sep_token_ids()
+        i = sum(divmod(len(sent_sep_token_ids), 2))
+        token_type_ids = output_0['token_type_ids'][:-1] \
+            + [1] * i \
+            + [0] * (len(sent_sep_token_ids) - i) \
+            + output_1['token_type_ids'][1:]
+
+        assert len(input_ids) == len(token_type_ids), \
+            'concatenated length mismatch: ' \
+            f'{len(input_ids)=} != {len(token_type_ids)=}'
+
+        return {
+            'input_ids': input_ids,
+            'token_type_ids': token_type_ids,
         }
 
-        # transform tgt
-        if tgt_txt is None:
-            tgt = None
-        else:
-            tgt = list(map(str, self.nlp(tgt_txt).sents))
-            tgt = self.tgt_tokenizer(tgt, **self.tokenize_args)
-            tgt = {
-                k: v[0]
-                for k, v in tgt.items()
-            }
+    @staticmethod
+    def _truncate(
+        tokenizer: Union[BertSumTokenizer, BertSumJapaneseTokenizer],
+        encoded_inputs: Dict[str, List[int]]
+    ) -> Dict[str, List[int]]:
+        input_ids = encoded_inputs['input_ids'][1:-1]
+        num_tokens_to_remove = len(input_ids) \
+            - tokenizer.model_max_length \
+            + 2  # for metatoken
+        input_ids, _, _ = tokenizer.truncate_sequences(
+            input_ids,
+            num_tokens_to_remove=num_tokens_to_remove,
+            truncation_strategy='longest_first',
+        )
+        input_ids = tokenizer.build_inputs_with_special_tokens(input_ids)
 
-        return src, tgt
+        token_type_ids = encoded_inputs['token_type_ids'][:len(input_ids)-1]
+        token_type_ids.append(token_type_ids[-1])
 
-    @property
-    def tokenize_args(self):
-        tokenize_args = dict(truncation=True)
-        if self.return_tensors is not None:
-            tokenize_args.update(dict(padding='max_length',
-                                      return_tensors=self.return_tensors))
-        return tokenize_args
+        assert len(input_ids) == len(token_type_ids), \
+            'truncated length mismatch: ' \
+            f'{len(input_ids)=} != {len(token_type_ids)=}'
 
-    @property
-    def tokenizer(self):
-        return self.tgt_tokenizer.tokenizer
+        return {
+            'input_ids': input_ids,
+            'token_type_ids': token_type_ids
+        }
 
-    @property
-    def translator(self):
-        def translator(token_ids: List[int]) -> str:
-            return self.tokenizer.decode(token_ids,
-                                         skip_special_tokens=True,
-                                         clean_up_tokenization_spaces=True)
+    def __len__(self) -> int:
+        return len(self.data)
 
-        return translator
+    def __getitem__(self, idx: int) -> Dict[str, List[int]]:
+        return self.data[idx]
 
 
 class BertSumExtDataset(BertSumDataset):
-    def transform(self, src_txt: str, tgt_txt: Optional[str] = None):
-        pass
+    pass
 
 
 class BertSumAbsDataset(BertSumDataset):
-    def transform(self, src_txt: str, tgt_txt: Optional[str] = None) -> Dict[str, Union[List[int], torch.Tensor]]:
-        src, tgt = self._transform(src_txt, tgt_txt)
-        data = src
-
-        if tgt is not None:
-            data.update({
-                f'decoder_{k}': v
-                for k, v in tgt.items()
-            })
-
-        return data
+    pass
