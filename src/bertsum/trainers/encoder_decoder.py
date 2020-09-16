@@ -1,9 +1,12 @@
 from functools import partial
+from logging import getLogger
 
 from torch import nn
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import LambdaLR
 from transformers import PreTrainedModel, Trainer, TrainingArguments
+
+logger = getLogger(__name__)
 
 
 class EncoderDecoderTrainer(Trainer):
@@ -17,6 +20,9 @@ class EncoderDecoderTrainer(Trainer):
                  encoder_warmup_steps: int = 20000,
                  decoder_warmup_steps: int = 10000,
                  **kwargs):
+        n_params = sum(p.numel()
+                       for p in model.parameters() if p.requires_grad)
+        logger.info(f'# of parameters={n_params}')
         super(EncoderDecoderTrainer, self).__init__(model, args, **kwargs)
 
         if 'optimizers' not in kwargs:
