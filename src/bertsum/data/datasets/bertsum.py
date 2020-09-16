@@ -23,20 +23,14 @@ class BertSumDataset(Dataset):
         if tgt is not None and len(src) != len(tgt):
             raise RuntimeError('Different length src v.s. tgt pair is given.')
 
+        self.model_type = model_type
         self._init_nlp(model_type)
-        src_tokenizer = AutoBertSumTokenizer.from_pretrained(model_type)
-        tgt_tokenizer = AutoBertSumTokenizer.from_pretrained(
-            model_type,
-            cls_token=self.TGT_CLS_TOKEN,
-            sep_token=self.TGT_SEP_TOKEN,
-            additional_special_tokens=self.TGT_ADDITIONAL_SPECIAL_TOKENS
-        )
 
         # create data
-        encoded_src = self._encode(src_tokenizer, src)
+        encoded_src = self._encode(self.src_tokenizer, src)
         self.data = encoded_src
         if tgt is not None:
-            encoded_tgt = self._encode(tgt_tokenizer, tgt)
+            encoded_tgt = self._encode(self.tgt_tokenizer, tgt)
             data = []
             for e_src, e_tgt in zip(encoded_src, encoded_tgt):
                 sample = e_src
@@ -48,12 +42,25 @@ class BertSumDataset(Dataset):
             self.data = data
 
         # set meta objects
-        self.tokenizer = tgt_tokenizer
-        vocab_size = self.tokenizer.vocab_size
+        tokenizer = self.tgt_tokenizer
+        vocab_size = tokenizer.vocab_size
         for token in [self.TGT_CLS_TOKEN, self.TGT_SEP_TOKEN] + self.TGT_ADDITIONAL_SPECIAL_TOKENS:
-            if token not in self.tokenizer.vocab:
+            if token not in tokenizer.vocab:
                 vocab_size += 1
         self.vocab_size = vocab_size
+
+    @property
+    def src_tokenizer(self):
+        return AutoBertSumTokenizer.from_pretrained(self.model_type)
+
+    @property
+    def tgt_tokenizer(self):
+        return AutoBertSumTokenizer.from_pretrained(
+            self.model_type,
+            cls_token=self.TGT_CLS_TOKEN,
+            sep_token=self.TGT_SEP_TOKEN,
+            additional_special_tokens=self.TGT_ADDITIONAL_SPECIAL_TOKENS
+        )
 
     def _init_nlp(self, model_type: str):
         if 'japanese' in model_type:
