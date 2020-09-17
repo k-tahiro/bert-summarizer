@@ -24,7 +24,7 @@ class BertSumDataset(Dataset):
             raise RuntimeError('Different length src v.s. tgt pair is given.')
 
         self.model_name = model_name
-        if 'bert-base-japanese' in model_name:
+        if self.is_japanese:
             import spacy
             nlp = spacy.load('ja_ginza')
         else:
@@ -59,17 +59,32 @@ class BertSumDataset(Dataset):
         self.vocab_size = vocab_size
 
     @property
+    def is_japanese(self):
+        return 'bert-base-japanese' in self.model_name
+
+    @property
     def src_tokenizer(self):
-        return AutoBertSumTokenizer.from_pretrained(self.model_name)
+        if self.is_japanese:
+            return BertSumJapaneseTokenizer.from_pretrained(self.model_name)
+        else:
+            return BertSumTokenizer.from_pretrained(self.model_name)
 
     @property
     def tgt_tokenizer(self):
-        return AutoBertSumTokenizer.from_pretrained(
-            self.model_name,
-            cls_token=self.TGT_CLS_TOKEN,
-            sep_token=self.TGT_SEP_TOKEN,
-            additional_special_tokens=self.TGT_ADDITIONAL_SPECIAL_TOKENS
-        )
+        if self.is_japanese:
+            return BertSumJapaneseTokenizer.from_pretrained(
+                self.model_name,
+                cls_token=self.TGT_CLS_TOKEN,
+                sep_token=self.TGT_SEP_TOKEN,
+                additional_special_tokens=self.TGT_ADDITIONAL_SPECIAL_TOKENS
+            )
+        else:
+            return BertSumTokenizer.from_pretrained(
+                self.model_name,
+                cls_token=self.TGT_CLS_TOKEN,
+                sep_token=self.TGT_SEP_TOKEN,
+                additional_special_tokens=self.TGT_ADDITIONAL_SPECIAL_TOKENS
+            )
 
     def _encode(
         self,
