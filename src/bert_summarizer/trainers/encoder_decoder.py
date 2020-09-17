@@ -1,9 +1,11 @@
 from functools import partial
 from logging import getLogger
+from typing import Dict, Optional
 
 from torch import nn
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import LambdaLR
+from tqdm import tqdm
 from transformers import PreTrainedModel, Trainer, TrainingArguments
 
 logger = getLogger(__name__)
@@ -25,7 +27,8 @@ class EncoderDecoderTrainer(Trainer):
         logger.info(f'# of parameters={n_params}')
         super(EncoderDecoderTrainer, self).__init__(model, args, **kwargs)
 
-        if 'optimizers' not in kwargs:
+        self.is_given_optims = 'optimizers' in kwargs
+        if not self.is_given_optims:
             encoder_params = self._get_params(self.model.encoder,
                                               self.args.weight_decay,
                                               encoder_learning_rate)
@@ -83,3 +86,17 @@ class EncoderDecoderTrainer(Trainer):
                 'lr': learning_rate
             },
         ]
+
+    def log(self, logs: Dict[str, float], iterator: Optional[tqdm] = None) -> None:
+        lrs = self.lr_scheduler.get_last_lr()
+        if self.is_given_optims:
+            for i, lr in enumerate(lrs):
+                logs[f'learning_rate/{i}'] = lr
+        else:
+            logs['learning_rate/encoder_w_decay'] = lrs[0]
+            logs['learning_rate/encoder_wo_decay'] = lrs[1]
+            logs['learning_rate/decoder_w_decay'] = lrs[2]
+            logs['learning_rate/decoder_wo_decay'] = lrs[3]
+
+        logs.pop('learning_rate', None)
+        super().log(logs, iterator)
