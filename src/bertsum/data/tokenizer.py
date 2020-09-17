@@ -1,6 +1,6 @@
-from typing import List, Optional, Union
+from typing import List, Optional
 
-from transformers import AutoTokenizer, BertTokenizer, BertJapaneseTokenizer
+from transformers import BertTokenizer, BertJapaneseTokenizer
 
 
 class BertSumMixin:
@@ -57,16 +57,3 @@ class BertSumTokenizer(BertSumMixin, BertTokenizer):
 
 class BertSumJapaneseTokenizer(BertSumMixin, BertJapaneseTokenizer):
     pass
-
-
-class AutoBertSumTokenizer(AutoTokenizer):
-    @classmethod
-    def from_pretrained(
-        cls,
-        pretrained_model_name_or_path,
-        *inputs,
-        **kwargs
-    ) -> Union[BertSumTokenizer, BertSumJapaneseTokenizer]:
-        if 'bert-base-japanese' in str(pretrained_model_name_or_path):
-            return BertSumJapaneseTokenizer.from_pretrained(pretrained_model_name_or_path, *inputs, **kwargs)
-        return BertSumTokenizer.from_pretrained(pretrained_model_name_or_path, *inputs, **kwargs)
