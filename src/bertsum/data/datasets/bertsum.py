@@ -16,15 +16,15 @@ class BertSumDataset(Dataset):
 
     def __init__(
         self,
-        model_type: str,
+        model_name: str,
         src: List[str],
         tgt: Optional[List[str]] = None
     ):
         if tgt is not None and len(src) != len(tgt):
             raise RuntimeError('Different length src v.s. tgt pair is given.')
 
-        self.model_type = model_type
-        self._init_nlp(model_type)
+        self.model_name = model_name
+        self._init_nlp(model_name)
 
         # create data
         encoded_src = self._encode(self.src_tokenizer, src)
@@ -51,19 +51,19 @@ class BertSumDataset(Dataset):
 
     @property
     def src_tokenizer(self):
-        return AutoBertSumTokenizer.from_pretrained(self.model_type)
+        return AutoBertSumTokenizer.from_pretrained(self.model_name)
 
     @property
     def tgt_tokenizer(self):
         return AutoBertSumTokenizer.from_pretrained(
-            self.model_type,
+            self.model_name,
             cls_token=self.TGT_CLS_TOKEN,
             sep_token=self.TGT_SEP_TOKEN,
             additional_special_tokens=self.TGT_ADDITIONAL_SPECIAL_TOKENS
         )
 
-    def _init_nlp(self, model_type: str):
-        if 'bert-base-japanese' in model_type:
+    def _init_nlp(self, model_name: str):
+        if 'bert-base-japanese' in model_name:
             import spacy
             nlp = spacy.load('ja_ginza')
         else:
