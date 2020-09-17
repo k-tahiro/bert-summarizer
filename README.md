@@ -44,5 +44,5 @@ Project Link: [https://github.com/k-tahiro/bert-summarizer](https://github.com/k
 
 ## Acknowledgements
 
-* EMNLP 2019 paper [Text Summarization with Pretrained Encoders](https://arxiv.org/abs/1908.08345)
-  * [PreSumm](https://github.com/nlpyang/PreSumm)
+- EMNLP 2019 paper [Text Summarization with Pretrained Encoders](https://arxiv.org/abs/1908.08345)
+  - [nlpyang/PreSumm](https://github.com/nlpyang/PreSumm)
