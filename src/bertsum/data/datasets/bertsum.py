@@ -63,7 +63,7 @@ class BertSumDataset(Dataset):
         )
 
     def _init_nlp(self, model_type: str):
-        if 'japanese' in model_type:
+        if 'bert-base-japanese' in model_type:
             import spacy
             nlp = spacy.load('ja_ginza')
         else:
