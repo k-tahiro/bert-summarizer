@@ -24,7 +24,16 @@ class BertSumDataset(Dataset):
             raise RuntimeError('Different length src v.s. tgt pair is given.')
 
         self.model_name = model_name
-        self._init_nlp(model_name)
+        if 'bert-base-japanese' in model_name:
+            import spacy
+            nlp = spacy.load('ja_ginza')
+        else:
+            from spacy.lang.en import English
+            nlp = English()
+            sentencizer = nlp.create_pipe("sentencizer")
+            nlp.add_pipe(sentencizer)
+
+        self.nlp = nlp
 
         # create data
         encoded_src = self._encode(self.src_tokenizer, src)
@@ -61,18 +70,6 @@ class BertSumDataset(Dataset):
             sep_token=self.TGT_SEP_TOKEN,
             additional_special_tokens=self.TGT_ADDITIONAL_SPECIAL_TOKENS
         )
-
-    def _init_nlp(self, model_name: str):
-        if 'bert-base-japanese' in model_name:
-            import spacy
-            nlp = spacy.load('ja_ginza')
-        else:
-            from spacy.lang.en import English
-            nlp = English()
-            sentencizer = nlp.create_pipe("sentencizer")
-            nlp.add_pipe(sentencizer)
-
-        self.nlp = nlp
 
     def _encode(
         self,
