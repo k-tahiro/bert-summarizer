@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, Union
 
 from torch.utils.data import Dataset
 
-from ..tokenizer import BertSumTokenizer, BertSumJapaneseTokenizer
+from ...tokenizers import BertSumTokenizer, BertSumJapaneseTokenizer
 
 logger = getLogger(__name__)
 
