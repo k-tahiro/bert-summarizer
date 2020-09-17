@@ -177,6 +177,7 @@ class BertSumDataset(Dataset):
 
 
 class BertSumExtDataset(BertSumDataset):
+    # TODO: add labels
     pass
 
 
