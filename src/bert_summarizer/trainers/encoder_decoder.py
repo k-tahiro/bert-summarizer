@@ -8,6 +8,8 @@ from torch.optim.lr_scheduler import LambdaLR
 from tqdm import tqdm
 from transformers import PreTrainedModel, Trainer, TrainingArguments
 
+from .lr_lambda import linear_then_invsqrt
+
 logger = getLogger(__name__)
 
 
@@ -41,24 +43,14 @@ class EncoderDecoderTrainer(Trainer):
                 eps=self.args.adam_epsilon,
             )
 
-            if self.args.max_steps > 0:
-                num_training_steps = self.args.max_steps
-            else:
-                train_dataloader = self.get_train_dataloader()
-                num_training_steps = int(len(train_dataloader)
-                                         // self.args.gradient_accumulation_steps
-                                         * self.args.num_train_epochs)
-
-            def lr_lambda(num_warmup_steps: int, current_step: int):
-                if current_step < num_warmup_steps:
-                    return float(current_step) / float(max(1, num_warmup_steps))
-                return max(
-                    0.0, float(num_training_steps - current_step) /
-                    float(max(1, num_training_steps - num_warmup_steps))
-                )
-
-            encoder_lr_lambda = partial(lr_lambda, encoder_warmup_steps)
-            decoder_lr_lambda = partial(lr_lambda, decoder_warmup_steps)
+            encoder_lr_lambda = partial(
+                linear_then_invsqrt,
+                encoder_warmup_steps
+            )
+            decoder_lr_lambda = partial(
+                linear_then_invsqrt,
+                decoder_warmup_steps
+            )
 
             lr_lambdas = [encoder_lr_lambda] * 2 + [decoder_lr_lambda] * 2
 
