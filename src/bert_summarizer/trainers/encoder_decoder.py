@@ -9,6 +9,7 @@ from tqdm import tqdm
 from transformers import PreTrainedModel, Trainer, TrainingArguments
 
 from .lr_lambda import linear_then_invsqrt
+from ..utils.nn import get_n_params
 
 logger = getLogger(__name__)
 
@@ -24,9 +25,9 @@ class EncoderDecoderTrainer(Trainer):
                  encoder_warmup_steps: int = 20000,
                  decoder_warmup_steps: int = 10000,
                  **kwargs):
-        n_params = sum(p.numel()
-                       for p in model.parameters() if p.requires_grad)
-        logger.info(f'# of parameters={n_params}')
+        logger.info(f'# of encoder parameters={get_n_params(model.encoder)}')
+        logger.info(f'# of decoder parameters={get_n_params(model.decoder)}')
+
         super(EncoderDecoderTrainer, self).__init__(model, args, **kwargs)
 
         self.is_given_optims = 'optimizers' in kwargs
