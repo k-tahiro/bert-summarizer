@@ -67,16 +67,14 @@ class BertSumAbs(EncoderDecoderModel):
 
         logger.debug(f'{self.config=}')
 
-        if self.config.use_encoder_embeddings:
-            enc_emb_weight = self.encoder.get_input_embeddings().weight.clone().detach()
-            dec_emb_weight = self.decoder.get_input_embeddings().weight.clone().detach()
-            enc_row, enc_col = enc_emb_weight.size()
-            dec_emb_weight[:enc_row, :enc_col] = enc_emb_weight
-            input_embeddings = nn.Embedding.from_pretrained(
-                dec_emb_weight,
-                freeze=False,
-                padding_idx=self.config.decoder.pad_token_id
-            )
-            self.decoder.set_input_embeddings(input_embeddings)
-
+        enc_emb_weight = self.encoder.get_input_embeddings().weight.clone().detach()
+        dec_emb_weight = self.decoder.get_input_embeddings().weight.clone().detach()
+        enc_row, enc_col = enc_emb_weight.size()
+        dec_emb_weight[:enc_row, :enc_col] = enc_emb_weight
+        input_embeddings = nn.Embedding.from_pretrained(
+            dec_emb_weight,
+            freeze=False,
+            padding_idx=self.config.decoder.pad_token_id
+        )
+        self.decoder.set_input_embeddings(input_embeddings)
         self.decoder.tie_weights()
