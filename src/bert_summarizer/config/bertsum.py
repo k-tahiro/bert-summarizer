@@ -37,6 +37,7 @@ class BertSumAbsConfig(EncoderDecoderConfig):
         else:
             encoder_config = BertConfig.from_pretrained(encoder_model_name_or_path) \
                                        .to_dict()
+
         if 'decoder' in kwargs:
             decoder_config = kwargs.pop('decoder')
         else:
