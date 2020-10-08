@@ -79,5 +79,4 @@ class BertSumAbs(EncoderDecoderModel):
             )
             self.decoder.set_input_embeddings(input_embeddings)
 
-        if self.config.tie_decoder_word_embeddings:
-            self.decoder.tie_weights()
+        self.decoder.tie_weights()
