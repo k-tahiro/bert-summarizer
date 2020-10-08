@@ -42,8 +42,8 @@ class BertSumAbsConfig(EncoderDecoderConfig):
         else:
             decoder_config = deepcopy(encoder_config)
             decoder_config.update(kwargs)
-            decoder_config['is_decoder'] = True
-            decoder_config['add_cross_attention'] = True
+        decoder_config['is_decoder'] = True
+        decoder_config['add_cross_attention'] = True
 
         logger.info(f'{encoder_config=}')
         logger.info(f'{decoder_config=}')
