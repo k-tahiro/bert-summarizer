@@ -139,7 +139,7 @@ class BertSumAbsDecoder(BertPreTrainedModel):
 
             normalization = target.ne(self.config.pad_token_id).sum().item()
 
-            lm_loss = self.loss(x, y).div(float(normalization))
+            lm_loss = self.loss(output, target).div(float(normalization))
 
         output = (prediction_scores, None, None)
         return ((lm_loss,) + output) if lm_loss is not None else output
