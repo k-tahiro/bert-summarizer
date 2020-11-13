@@ -66,8 +66,8 @@ class BertSumAbsDecoder(BertPreTrainedModel):
             config.hidden_dropout_prob,
             config.attention_probs_dropout_prob,
             Embeddings(
-                config.vocab_size,
                 config.hidden_size,
+                config.vocab_size,
                 config.pad_token_id,
                 position_encoding=True
             ),
@@ -113,7 +113,7 @@ class BertSumAbsDecoder(BertPreTrainedModel):
         output_hidden_states=None,
         **kwargs
     ):
-        self.init_state(
+        self.decoder.init_state(
             kwargs['encoder_input_ids'],
             encoder_hidden_states,
             encoder_hidden_states
@@ -134,7 +134,7 @@ class BertSumAbsDecoder(BertPreTrainedModel):
 
             output = self.generator[1](
                 shifted_prediction_scores
-            ).view(-1, self.vocab_size)
+            ).view(-1, self.config.vocab_size)
             target = labels.view(-1)
 
             normalization = target.ne(self.config.pad_token_id).sum().item()
