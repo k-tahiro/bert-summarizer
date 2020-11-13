@@ -82,6 +82,7 @@ class BertSumAbsDecoder(BertPreTrainedModel):
             nn.Linear(config.hidden_size, config.vocab_size),
             nn.LogSoftmax(dim=-1)
         )
+        self.generator[0].bias.requires_grad = False
 
         self.loss = LabelSmoothingLoss(
             0.1,
