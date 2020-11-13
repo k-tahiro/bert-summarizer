@@ -131,6 +131,8 @@ class BertSumAbsDecoder(BertPreTrainedModel):
         return_dict=None,
         **kwargs
     ):
+        logger.debug(f'{kwargs=}')
+
         # Use OpenNMT-py TransformerDecoder
         src = kwargs['encoder_input_ids'].unsqueeze(-1).transpose(0, 1)
         tgt = input_ids.unsqueeze(-1).transpose(0, 1)
