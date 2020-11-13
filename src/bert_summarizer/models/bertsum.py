@@ -122,11 +122,12 @@ class BertSumAbsDecoder(BertPreTrainedModel):
         position_ids=None,
         head_mask=None,
         inputs_embeds=None,
-        labels=None,
         encoder_hidden_states=None,
         encoder_attention_mask=None,
+        labels=None,
         output_attentions=None,
         output_hidden_states=None,
+        return_dict=None,
         **kwargs
     ):
         # Use OpenNMT-py TransformerDecoder
