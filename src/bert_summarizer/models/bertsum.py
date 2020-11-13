@@ -6,6 +6,7 @@ from onmt.modules import Embeddings
 from onmt.utils.loss import LabelSmoothingLoss
 import torch
 from torch import nn
+from torch.nn.init import xavier_uniform_
 from transformers import (
     BertConfig,
     BertPreTrainedModel,
@@ -82,6 +83,20 @@ class BertSumAbsDecoder(BertPreTrainedModel):
             nn.Linear(config.hidden_size, config.vocab_size),
             nn.LogSoftmax(dim=-1)
         )
+
+        for module in self.decoder.modules():
+            if isinstance(module, (nn.Linear, nn.Embedding)):
+                module.weight.data.normal_(mean=0.0, std=0.02)
+            elif isinstance(module, nn.LayerNorm):
+                module.bias.data.zero_()
+                module.weight.data.fill_(1.0)
+            if isinstance(module, nn.Linear) and module.bias is not None:
+                module.bias.data.zero_()
+        for p in self.generator.parameters():
+            if p.dim() > 1:
+                xavier_uniform_(p)
+            else:
+                p.data.zero_()
         self.generator[0].bias.requires_grad = False
 
         self.loss = LabelSmoothingLoss(
