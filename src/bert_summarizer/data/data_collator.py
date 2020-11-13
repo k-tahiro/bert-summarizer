@@ -51,6 +51,8 @@ class EncoderDecoderDataCollatorWithPadding(DataCollatorWithPadding):
             for k, v in decoder_batch.items()
         ))
 
+        batch['decoder_encoder_input_ids'] = batch['input_ids']
+
         if self.generate_labels:
             batch['labels'] = batch['decoder_input_ids']
 
