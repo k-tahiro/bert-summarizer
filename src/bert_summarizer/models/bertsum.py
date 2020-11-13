@@ -113,16 +113,20 @@ class BertSumAbsDecoder(BertPreTrainedModel):
         output_hidden_states=None,
         **kwargs
     ):
-        self.decoder.init_state(
-            kwargs['encoder_input_ids'],
-            encoder_hidden_states,
-            encoder_hidden_states
-        )
-        decoder_outputs, _ = self.decoder.forward(
-            input_ids.T.unsqueeze(-1),
-            encoder_hidden_states,
+        # Use OpenNMT-py TransformerDecoder
+        src = kwargs['encoder_input_ids'].unsqueeze(-1).transpose(0, 1)
+        tgt = input_ids.unsqueeze(-1).transpose(0, 1)
+        memory_bank = enc_hidden = encoder_hidden_states.transpose(0, 1)
+
+        self.decoder.init_state(src, memory_bank, enc_hidden)
+        dec_outs, attns = self.decoder(
+            tgt,
+            memory_bank,
             memory_lengths=encoder_attention_mask.sum(axis=1)
         )
+
+        # transformers style loss calculation
+        decoder_outputs = dec_outs.transpose(0, 1)
         prediction_scores = self.generator[0](decoder_outputs)
 
         lm_loss = None
