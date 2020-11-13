@@ -118,7 +118,7 @@ class BertSumAbsDecoder(BertPreTrainedModel):
             encoder_hidden_states,
             encoder_hidden_states
         )
-        decoder_outputs, _ = self.decoder(
+        decoder_outputs, _ = self.decoder.forward(
             input_ids.T.unsqueeze(-1),
             encoder_hidden_states,
             memory_lengths=encoder_attention_mask.sum(axis=1)
