@@ -19,6 +19,7 @@ from transformers.modeling_bert import (
     BertPooler,
     BertOnlyMLMHead
 )
+from transformers.modeling_outputs import CausalLMOutput
 
 from ..config import BertSumExtConfig, BertSumAbsConfig
 
@@ -162,8 +163,16 @@ class BertSumAbsDecoder(BertPreTrainedModel):
 
             lm_loss = self.loss(output, target).div(float(normalization))
 
-        output = (prediction_scores, None, None)
-        return ((lm_loss,) + output) if lm_loss is not None else output
+        if not return_dict:
+            output = (prediction_scores, None, None)
+            return ((lm_loss,) + output) if lm_loss is not None else output
+
+        return CausalLMOutput(
+            loss=lm_loss,
+            logits=prediction_scores,
+            hidden_states=None,
+            attentions=None,
+        )
 
 
 class BertSumAbs(EncoderDecoderModel):
