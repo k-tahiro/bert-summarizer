@@ -28,6 +28,7 @@ class BertSumDataset(Dataset):
         self.src = src
         self.tgt = tgt
 
+        # load nlp
         if self.is_japanese:
             import spacy
             nlp = spacy.load('ja_ginza')
@@ -36,7 +37,6 @@ class BertSumDataset(Dataset):
             nlp = English()
             sentencizer = nlp.create_pipe("sentencizer")
             nlp.add_pipe(sentencizer)
-
         self.nlp = nlp
 
         # create data
