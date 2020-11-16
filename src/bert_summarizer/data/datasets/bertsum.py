@@ -157,7 +157,7 @@ class BertSumDataset(Dataset):
         )
         input_ids = tokenizer.build_inputs_with_special_tokens(input_ids)
 
-        token_type_ids = encoded_inputs['token_type_ids'][:len(input_ids)-1]
+        token_type_ids = encoded_inputs['token_type_ids'][:len(input_ids) - 1]
         token_type_ids.append(token_type_ids[-1])
 
         assert len(input_ids) == len(token_type_ids), \
