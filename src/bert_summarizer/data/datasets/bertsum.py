@@ -23,7 +23,11 @@ class BertSumDataset(Dataset):
         if tgt is not None and len(src) != len(tgt):
             raise RuntimeError('Different length src v.s. tgt pair is given.')
 
+        # keep inputs
         self.model_name = model_name
+        self.src = src
+        self.tgt = tgt
+
         if self.is_japanese:
             import spacy
             nlp = spacy.load('ja_ginza')
