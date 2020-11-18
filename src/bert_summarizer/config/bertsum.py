@@ -29,8 +29,6 @@ class BertSumAbsConfig(EncoderDecoderConfig):
     def __init__(
         self,
         encoder_model_name_or_path: str = 'bert-base-uncased',
-        use_encoder_embeddings: bool = True,
-        tie_decoder_word_embeddings: bool = True,
         **kwargs
     ):
         if 'encoder' in kwargs:
@@ -38,20 +36,17 @@ class BertSumAbsConfig(EncoderDecoderConfig):
         else:
             encoder_config = BertConfig.from_pretrained(encoder_model_name_or_path) \
                                        .to_dict()
+
         if 'decoder' in kwargs:
             decoder_config = kwargs.pop('decoder')
         else:
             decoder_config = deepcopy(encoder_config)
             decoder_config.update(kwargs)
-            decoder_config['is_decoder'] = True
-            decoder_config['add_cross_attention'] = True
-            if tie_decoder_word_embeddings:
-                decoder_config['tie_word_embeddings'] = True
+        decoder_config['is_decoder'] = True
+        decoder_config['add_cross_attention'] = True
 
         logger.info(f'{encoder_config=}')
         logger.info(f'{decoder_config=}')
 
         super().__init__(encoder=encoder_config, decoder=decoder_config)
         self.encoder_model_name_or_path = encoder_model_name_or_path
-        self.use_encoder_embeddings = use_encoder_embeddings
-        self.tie_decoder_word_embeddings = tie_decoder_word_embeddings
