@@ -37,13 +37,16 @@ class EncoderDecoderDataCollatorWithPadding(DataCollatorWithPadding):
             pad_to_multiple_of=self.pad_to_multiple_of,
             return_tensors='pt',
         )
-        decoder_batch = self.decoder_tokenizer.pad(
-            decoder_features,
-            padding=self.padding,
-            max_length=self.max_length,
-            pad_to_multiple_of=self.pad_to_multiple_of,
-            return_tensors='pt',
-        )
+        if decoder_features:
+            decoder_batch = self.decoder_tokenizer.pad(
+                decoder_features,
+                padding=self.padding,
+                max_length=self.max_length,
+                pad_to_multiple_of=self.pad_to_multiple_of,
+                return_tensors='pt',
+            )
+        else:
+            decoder_batch = dict()
 
         batch = encoder_batch
         batch.update(dict(
