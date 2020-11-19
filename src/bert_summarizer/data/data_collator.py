@@ -46,7 +46,7 @@ class EncoderDecoderDataCollatorWithPadding(DataCollatorWithPadding):
                 return_tensors='pt',
             )
         else:
-            decoder_batch = []
+            decoder_batch = dict()
 
         batch = encoder_batch
         batch.update(dict(
