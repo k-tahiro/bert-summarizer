@@ -210,7 +210,7 @@ class BertSumAbs(EncoderDecoderModel):
         self.decoder.set_input_embeddings(input_embeddings)
         self.decoder.tie_weights()
 
-    def prepare_inputs_for_generation(self, input_ids, past, attention_mask, encoder_outputs, **kwargs):
+    def prepare_inputs_for_generation(self, input_ids, past=None, attention_mask=None, encoder_outputs=None, **kwargs):
         input_dict = super().prepare_inputs_for_generation(
             input_ids,
             past,
