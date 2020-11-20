@@ -19,7 +19,7 @@ from transformers.modeling_bert import (
     BertPooler,
     BertOnlyMLMHead
 )
-from transformers.modeling_outputs import CausalLMOutput
+from transformers.modeling_outputs import CausalLMOutputWithCrossAttentions
 
 from ..config import BertSumExtConfig, BertSumAbsConfig
 
@@ -169,11 +169,12 @@ class BertSumAbsDecoder(BertPreTrainedModel):
             output = (prediction_scores, None, None)
             return ((lm_loss,) + output) if lm_loss is not None else output
 
-        return CausalLMOutput(
+        return CausalLMOutputWithCrossAttentions(
             loss=lm_loss,
             logits=prediction_scores,
             hidden_states=None,
             attentions=None,
+            cross_attentions=attns['std'],
         )
 
 
