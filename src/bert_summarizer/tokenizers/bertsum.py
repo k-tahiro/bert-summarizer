@@ -1,3 +1,4 @@
+import re
 from typing import List, Optional
 
 from transformers import BertTokenizer, BertJapaneseTokenizer
@@ -56,4 +57,21 @@ class BertSumTokenizer(BertSumMixin, BertTokenizer):
 
 
 class BertSumJapaneseTokenizer(BertSumMixin, BertJapaneseTokenizer):
-    pass
+    ASCII_PATTERN = re.compile(r'[A-Za-z]+')
+
+    @classmethod
+    def clean_up_tokenization(cls, out_string: str) -> str:
+        tokens = out_string.split()
+        jp_tokens = []
+        sub_tokens = []
+        for token in tokens:
+            if cls.ASCII_PATTERN.fullmatch(token):
+                sub_tokens.append(token)
+            else:
+                if sub_tokens:
+                    jp_tokens.append(' '.join(sub_tokens))
+                    sub_tokens = []
+                jp_tokens.append(token)
+        out_string = ''.join(jp_tokens)
+        out_string = BertJapaneseTokenizer.clean_up_tokenization(out_string)
+        return out_string
