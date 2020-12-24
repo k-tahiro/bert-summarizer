@@ -106,6 +106,8 @@ class BertSumAbsDecoder(BertPreTrainedModel):
             ignore_index=config.pad_token_id
         )
 
+        self.tie_weights()
+
     def get_input_embeddings(self) -> nn.Module:
         return self.decoder.embeddings.make_embedding.emb_luts[0]
 
