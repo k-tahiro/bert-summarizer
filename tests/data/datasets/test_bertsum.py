@@ -57,5 +57,4 @@ class TestBertSumAbsDataset:
         return BertSumAbsDataset(model_name, src, tgt_abs)
 
     def test_data(self, bertsum_abs_dataset, encoded_data_abs):
-        assert len(bertsum_abs_dataset.data) == len(encoded_data_abs)
         assert bertsum_abs_dataset.data == encoded_data_abs
