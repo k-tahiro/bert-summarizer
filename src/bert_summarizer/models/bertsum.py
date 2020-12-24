@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 from onmt.decoders import TransformerDecoder
 from onmt.modules import Embeddings
@@ -19,7 +19,7 @@ from transformers.modeling_bert import (
     BertPooler,
     BertOnlyMLMHead
 )
-from transformers.modeling_outputs import CausalLMOutputWithCrossAttentions
+from transformers.modeling_outputs import CausalLMOutputWithCrossAttentions, SequenceClassifierOutput
 
 from ..config import BertSumExtConfig, BertSumAbsConfig
 
@@ -33,23 +33,51 @@ class BertSumExt(BertPreTrainedModel):
         super().__init__(config)
 
         self.bert = BertModel.from_pretrained(config.base_model_name_or_path)
-
-        self.encoder = nn.Sequential(
-            BertEncoder(config),
-            BertPooler(config)
+        self.encoder = BertEncoder(config)
+        self.classifier = nn.Sequential(
+            nn.Linear(config.hidden_size, 1, bias=True),
+            nn.Sigmoid()
         )
-        self.cls = BertOnlyMLMHead(config)
 
-    def forward(self,
-                src: Dict[str, torch.Tensor],
-                cls_idxs: Union[None, List[List[int]], torch.Tensor] = None):
-        if cls_idxs is None:
-            cls_idxs = src['input_ids'] == self.config.cls_token_id
+    def forward(
+        self,
+        input_ids=None,
+        attention_mask=None,
+        token_type_ids=None,
+        cls_mask=None,
+        labels=None,
+        return_dict=None,
+        **kwargs
+    ):
+        outputs = self.bert(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            token_type_ids=token_type_ids,
+            **kwargs
+        )
 
-        x = self.bert(**src)[0]
-        x = self.encoder(x, encoder_attention_mask=cls_idxs)
-        x = self.cls(x)
-        return x
+        sequence_output = outputs[0]
+        cls_output = sequence_output[cls_mask]
+
+        cls_output = self.encoder(sequence_output)
+        logits = self.classifier(cls_output)
+
+        loss = None
+        if labels is not None:
+            labels = labels[cls_mask]
+            loss_fct = nn.MSELoss()
+            loss = loss_fct(logits.view(-1), labels.view(-1))
+
+        if not return_dict:
+            output = (logits,) + outputs[2:]
+            return ((loss,) + output) if loss is not None else output
+
+        return SequenceClassifierOutput(
+            loss=loss,
+            logits=logits,
+            hidden_states=outputs.hidden_states,
+            attentions=outputs.attentions,
+        )
 
 
 class BertSumAbsDecoder(BertPreTrainedModel):
