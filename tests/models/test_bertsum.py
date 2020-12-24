@@ -11,11 +11,11 @@ class TestBertSumExt:
 class TestBertSumAbsDecoder:
     @pytest.fixture
     def config(self):
-        return BertSumAbsConfig()
+        return BertSumAbsConfig().decoder
 
     @pytest.fixture
     def model(self, config):
-        return BertSumAbsDecoder(config.decoder)
+        return BertSumAbsDecoder(config)
 
     def test_get_input_embeddings(self, model):
         model.decoder.embeddings.make_embedding.emb_luts[0] = None
@@ -30,9 +30,13 @@ class TestBertSumAbsDecoder:
         model.generator[0] = None
         assert model.get_output_embeddings() is None
 
-    def test_embeddings_weight(self, model):
+    def test_embeddings_weight(self, config, model):
         assert id(model.get_input_embeddings().weight) \
             == id(model.get_output_embeddings().weight)
+
+        input_embeddings = model.get_input_embeddings()
+        assert input_embeddings.embedding_dim == config.hidden_size
+        assert input_embeddings.num_embeddings == config.vocab_size
 
     def test_network_structure(self, config, model):
         pass
