@@ -12,7 +12,7 @@ def model_name():
 def src():
     return [
         'This is the first text for testing. This text contains two sentences.',
-        'This is the second text for testing. This text contains two sentences.'
+        'This is the second text for testing. This text contains two sentences.',
     ]
 
 
@@ -25,7 +25,7 @@ def tgt_ext():
 def tgt_abs():
     return [
         'First test text',
-        'Second test text'
+        'Second test text',
     ]
 
 
@@ -43,7 +43,7 @@ def encoded_data_abs():
             'token_type_ids': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
             'decoder_input_ids': [2, 2117, 3231, 3793, 3],
             'decoder_token_type_ids': [0, 0, 0, 0, 0],
-        }
+        },
     ]
 
 
