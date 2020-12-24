@@ -26,6 +26,10 @@ class TestBertSumAbsDecoder:
         assert model.decoder.embeddings.make_embedding.emb_luts[0] \
             is None
 
+    def test_get_output_embeddings(self, model):
+        model.generator[0] = None
+        assert model.get_output_embeddings() is None
+
     def test_embeddings_weight(self, model):
         assert id(model.get_input_embeddings().weight) \
             == id(model.get_output_embeddings().weight)
