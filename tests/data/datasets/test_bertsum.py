@@ -18,7 +18,28 @@ def src():
 
 @pytest.fixture
 def tgt_ext():
-    pass
+    return [
+        ['This is the first text for testing.'],
+        ['This is the second text for testing.'],
+    ]
+
+
+@pytest.fixture
+def encoded_data_ext():
+    return [
+        {
+            'input_ids': [101, 2023, 2003, 1996, 2034, 3793, 2005, 5604, 1012, 102, 101, 2023, 3793, 3397, 2048, 11746, 1012, 102],
+            'token_type_ids': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+            'cls_mask': [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+            'label': [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        },
+        {
+            'input_ids': [101, 2023, 2003, 1996, 2117, 3793, 2005, 5604, 1012, 102, 101, 2023, 3793, 3397, 2048, 11746, 1012, 102],
+            'token_type_ids': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+            'cls_mask': [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+            'label': [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        },
+    ]
 
 
 @pytest.fixture
@@ -48,7 +69,12 @@ def encoded_data_abs():
 
 
 class TestBertSumExtDataset:
-    pass
+    @pytest.fixture
+    def bertsum_ext_dataset(self, model_name, src, tgt_ext):
+        return BertSumExtDataset(model_name, src, tgt_ext)
+
+    def test_data(self, bertsum_ext_dataset, encoded_data_ext):
+        assert bertsum_ext_dataset.data == encoded_data_ext
 
 
 class TestBertSumAbsDataset:

@@ -14,7 +14,7 @@ class BertSumDataset(Dataset):
         self,
         model_name: str,
         src: List[str],
-        tgt: Optional[List[str]] = None
+        tgt: Optional[Union[List[str], List[List[str]]]] = None
     ):
         if tgt is not None and len(src) != len(tgt):
             raise RuntimeError('Different length src v.s. tgt pair is given.')
@@ -54,13 +54,17 @@ class BertSumDataset(Dataset):
         self,
         tokenizer: Union[BertSumTokenizer, BertSumJapaneseTokenizer],
         data: List[str],
+        keep_sents: bool = True,
     ) -> List[Dict[str, List[int]]]:
         concat_sents = partial(self._concat_sents, tokenizer)
         truncate = partial(self._truncate, tokenizer)
 
+        sentences = []
         encoded_data = []
         for text in data:
             sents = list(map(str, self.nlp(text).sents))
+            if keep_sents:
+                sentences.append(sents)
             n_sents = len(sents)
             sent_pairs = sum(divmod(n_sents, 2))
             outputs = []
@@ -76,6 +80,9 @@ class BertSumDataset(Dataset):
                 outputs.append(output)
 
             encoded_data.append(truncate(reduce(concat_sents, outputs)))
+
+        if keep_sents:
+            self.sentences = sentences
         return encoded_data
 
     @staticmethod
@@ -141,8 +148,35 @@ class BertSumDataset(Dataset):
 
 
 class BertSumExtDataset(BertSumDataset):
-    # TODO: add labels
-    pass
+    def __init__(
+        self,
+        model_name: str,
+        src: List[str],
+        tgt: Optional[List[List[str]]] = None
+    ):
+        super().__init__(model_name, src, tgt)
+
+        if tgt is None:
+            return
+
+        tokenizer = self.src_tokenizer
+        bos_token_id = tokenizer.cls_token_id
+        eos_token_id = tokenizer.sep_token_id
+        for data, sents_src, sents_tgt in zip(self.data, self.sentences, tgt):
+            data['cls_mask'] = [
+                1 * (id_ == bos_token_id)
+                for id_ in data['input_ids']
+            ]
+
+            data['label'] = []
+            index = 0
+            for m in data['cls_mask']:
+                if m:
+                    sent = sents_src[index]
+                    data['label'].append(1 * (sent in sents_tgt))
+                    index += 1
+                else:
+                    data['label'].append(0)
 
 
 class BertSumAbsDataset(BertSumDataset):
@@ -162,7 +196,7 @@ class BertSumAbsDataset(BertSumDataset):
             return
 
         tokenizer = self.tgt_tokenizer
-        encoded_tgt = self._encode(tokenizer, tgt)
+        encoded_tgt = self._encode(tokenizer, tgt, False)
         for data, e_tgt in zip(self.data, encoded_tgt):
             data.update({
                 f'decoder_{k}': v
