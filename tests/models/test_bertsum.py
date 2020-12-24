@@ -91,4 +91,32 @@ class TestBertSumAbsDecoder:
 
 
 class TestBertSumAbs:
-    pass
+    @pytest.fixture
+    def config(self):
+        return BertSumAbsConfig()
+
+    @pytest.fixture
+    def model(self, config):
+        return BertSumAbs(config)
+
+    def test_embeddings_weight(self, model):
+        assert (model.encoder.get_input_embeddings().weight
+                == model.decoder.get_input_embeddings().weight).all()
+
+    @pytest.mark.parametrize('input_ids,kwargs,expected_update', [
+        ([0, 1, 2], dict(), dict()),
+        (
+            [0, 1, 2],
+            dict(decoder_encoder_input_ids=[0, 1, 2]),
+            dict(decoder_encoder_input_ids=[0, 1, 2])
+        ),
+        ([0, 1, 2], dict(invalid_arg=[0, 1, 2]), dict()),
+    ])
+    def test_prepare_inputs_for_generation(self, model, input_ids, kwargs, expected_update):
+        input_dict = super(
+            BertSumAbs, model
+        ).prepare_inputs_for_generation(input_ids, **kwargs)
+        input_dict.update(expected_update)
+
+        assert model.prepare_inputs_for_generation(input_ids, **kwargs) \
+            == input_dict
