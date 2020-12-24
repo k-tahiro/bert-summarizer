@@ -10,10 +10,6 @@ logger = getLogger(__name__)
 
 
 class BertSumDataset(Dataset):
-    TGT_CLS_TOKEN = '[unused1]'
-    TGT_SEP_TOKEN = '[unused2]'
-    TGT_ADDITIONAL_SPECIAL_TOKENS = ['[unused3]']
-
     def __init__(
         self,
         model_name: str,
@@ -42,25 +38,6 @@ class BertSumDataset(Dataset):
         # create data
         encoded_src = self._encode(self.src_tokenizer, src)
         self.data = encoded_src
-        if tgt is not None:
-            encoded_tgt = self._encode(self.tgt_tokenizer, tgt)
-            data = []
-            for e_src, e_tgt in zip(encoded_src, encoded_tgt):
-                sample = e_src
-                sample.update({
-                    f'decoder_{k}': v
-                    for k, v in e_tgt.items()
-                })
-                data.append(sample)
-            self.data = data
-
-        # set meta objects
-        tokenizer = self.tgt_tokenizer
-        vocab_size = tokenizer.vocab_size
-        for token in [self.TGT_CLS_TOKEN, self.TGT_SEP_TOKEN] + self.TGT_ADDITIONAL_SPECIAL_TOKENS:
-            if token not in tokenizer.vocab:
-                vocab_size += 1
-        self.vocab_size = vocab_size
 
     @property
     def is_japanese(self):
@@ -72,23 +49,6 @@ class BertSumDataset(Dataset):
             return BertSumJapaneseTokenizer.from_pretrained(self.model_name)
         else:
             return BertSumTokenizer.from_pretrained(self.model_name)
-
-    @property
-    def tgt_tokenizer(self):
-        if self.is_japanese:
-            return BertSumJapaneseTokenizer.from_pretrained(
-                self.model_name,
-                cls_token=self.TGT_CLS_TOKEN,
-                sep_token=self.TGT_SEP_TOKEN,
-                additional_special_tokens=self.TGT_ADDITIONAL_SPECIAL_TOKENS
-            )
-        else:
-            return BertSumTokenizer.from_pretrained(
-                self.model_name,
-                cls_token=self.TGT_CLS_TOKEN,
-                sep_token=self.TGT_SEP_TOKEN,
-                additional_special_tokens=self.TGT_ADDITIONAL_SPECIAL_TOKENS
-            )
 
     def _encode(
         self,
@@ -186,4 +146,49 @@ class BertSumExtDataset(BertSumDataset):
 
 
 class BertSumAbsDataset(BertSumDataset):
-    pass
+    TGT_CLS_TOKEN = '[unused1]'
+    TGT_SEP_TOKEN = '[unused2]'
+    TGT_ADDITIONAL_SPECIAL_TOKENS = ['[unused3]']
+
+    def __init__(
+        self,
+        model_name: str,
+        src: List[str],
+        tgt: Optional[List[str]] = None
+    ):
+        super().__init__(model_name, src, tgt)
+
+        if tgt is None:
+            return
+
+        tokenizer = self.tgt_tokenizer
+        encoded_tgt = self._encode(tokenizer, tgt)
+        for data, e_tgt in zip(self.data, encoded_tgt):
+            data.update({
+                f'decoder_{k}': v
+                for k, v in e_tgt.items()
+            })
+
+        # set meta objects
+        vocab_size = tokenizer.vocab_size
+        for token in [self.TGT_CLS_TOKEN, self.TGT_SEP_TOKEN] + self.TGT_ADDITIONAL_SPECIAL_TOKENS:
+            if token not in tokenizer.vocab:
+                vocab_size += 1
+        self.vocab_size = vocab_size
+
+    @property
+    def tgt_tokenizer(self):
+        if self.is_japanese:
+            return BertSumJapaneseTokenizer.from_pretrained(
+                self.model_name,
+                cls_token=self.TGT_CLS_TOKEN,
+                sep_token=self.TGT_SEP_TOKEN,
+                additional_special_tokens=self.TGT_ADDITIONAL_SPECIAL_TOKENS
+            )
+        else:
+            return BertSumTokenizer.from_pretrained(
+                self.model_name,
+                cls_token=self.TGT_CLS_TOKEN,
+                sep_token=self.TGT_SEP_TOKEN,
+                additional_special_tokens=self.TGT_ADDITIONAL_SPECIAL_TOKENS
+            )
