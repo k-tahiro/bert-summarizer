@@ -5,12 +5,12 @@ from bert_summarizer.config.bertsum import BertSumExtConfig, BertSumAbsConfig
 
 
 @pytest.fixture
-def default_encoder_model_name_or_path():
+def default_model_name_or_path():
     return 'bert-base-uncased'
 
 
 @pytest.fixture
-def default_encoder_config():
+def default_bert_config():
     return AutoConfig.from_pretrained('bert-base-uncased').to_dict()
 
 
@@ -29,13 +29,13 @@ class TestBertSumExtConfig:
 class TestBertSumAbsConfig:
     def test_default_config(
         self,
-        default_encoder_model_name_or_path,
-        default_encoder_config,
+        default_model_name_or_path,
+        default_bert_config,
         default_decoder_config
     ):
         config = BertSumAbsConfig()
-        assert config.encoder_model_name_or_path == default_encoder_model_name_or_path
-        assert config.encoder.to_dict() == default_encoder_config
+        assert config.encoder_model_name_or_path == default_model_name_or_path
+        assert config.encoder.to_dict() == default_bert_config
         assert config.decoder.to_dict() == default_decoder_config
 
     @pytest.mark.parametrize('kwargs', [
