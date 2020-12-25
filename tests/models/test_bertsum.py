@@ -29,6 +29,87 @@ class TestBertSumExt:
         assert model.classifier[0].in_features == config.hidden_size
         assert model.classifier[0].out_features == 1
 
+    @pytest.mark.parametrize('cls_mask,labels,return_dict,expected_len', [
+        (
+            torch.tensor([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                          [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]]),
+            None,
+            None,
+            1
+        ),
+        (
+            torch.tensor([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                          [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]]),
+            None,
+            True,
+            3
+        ),
+        (
+            torch.tensor([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                          [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]]),
+            torch.tensor([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                          [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]),
+            None,
+            2
+        ),
+        (
+            torch.tensor([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                          [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]]),
+            torch.tensor([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                          [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]),
+            True,
+            4
+        ),
+    ])
+    def test_forward(self, config, model, cls_mask, labels, return_dict, expected_len):
+        batch_size = 2
+        input_size = 18
+        input_ids = torch.tensor([
+            [101, 2023, 2003, 1996, 2034, 3793, 2005, 5604, 1012,
+                102, 101, 2023, 3793, 3397, 2048, 11746, 1012, 102],
+            [101, 2023, 2003, 1996, 2117, 3793, 2005, 5604, 1012,
+                102, 101, 2023, 3793, 3397, 2048, 11746, 1012, 102],
+        ])
+        attention_mask = torch.tensor([
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        ])
+        token_type_ids = torch.tensor([
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+        ])
+
+        outputs = model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            token_type_ids=token_type_ids,
+            cls_mask=cls_mask,
+            labels=labels,
+            return_dict=return_dict,
+            output_attentions=return_dict,
+            output_hidden_states=return_dict,
+        )
+
+        assert len(outputs) == expected_len
+
+        loss = logits = None
+        if return_dict:
+            loss = outputs.loss
+            logits = outputs.logits
+        else:
+            if labels is not None:
+                loss, logits = outputs
+            else:
+                logits = outputs[0]
+
+        if loss is not None:
+            assert isinstance(loss.item(), float)
+
+        assert len(logits.size()) == 3
+        assert logits.size(0) == batch_size
+        assert logits.size(1) == input_size
+        assert logits.size(2) == 1
+
 
 class TestBertSumAbsDecoder:
     @pytest.fixture

@@ -63,20 +63,24 @@ class BertSumExt(BertPreTrainedModel):
             input_ids=input_ids,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
+            return_dict=return_dict,
             **kwargs
         )
 
-        sequence_output = outputs[0]
-        cls_output = sequence_output[cls_mask]
+        sequence_output = outputs[0].transpose(0, 1)
+        cls_output = self.encoder(
+            sequence_output,
+            src_key_padding_mask=(attention_mask & cls_mask) ^ True,
+        )
+        cls_output = cls_output.transpose(0, 1)
 
-        cls_output = self.encoder(sequence_output)
         logits = self.classifier(cls_output)
 
         loss = None
         if labels is not None:
-            labels = labels[cls_mask]
             loss_fct = nn.MSELoss()
-            loss = loss_fct(logits.view(-1), labels.view(-1))
+            loss = loss_fct(logits[cls_mask].view(-1),
+                            labels[cls_mask].view(-1))
 
         if not return_dict:
             output = (logits,) + outputs[2:]
