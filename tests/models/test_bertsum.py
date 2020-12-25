@@ -16,6 +16,18 @@ class TestBertSumExt:
 
     def test_network_structure(self, config, model):
         assert len(model.encoder.layers) == config.encoder.num_hidden_layers
+        assert model.encoder.norm.normalized_shape[0] == config.hidden_size
+        assert model.encoder.norm.eps == config.encoder.layer_norm_eps
+
+        encoder_layer = model.encoder.layers[0]
+        assert encoder_layer.self_attn.embed_dim == config.hidden_size
+        assert encoder_layer.self_attn.num_heads == config.encoder.num_attention_heads
+        assert encoder_layer.self_attn.dropout == config.encoder.attention_probs_dropout_prob
+        assert encoder_layer.linear1.in_features == config.hidden_size
+        assert encoder_layer.linear1.out_features == config.encoder.intermediate_size
+
+        assert model.classifier[0].in_features == config.hidden_size
+        assert model.classifier[0].out_features == 1
 
 
 class TestBertSumAbsDecoder:
