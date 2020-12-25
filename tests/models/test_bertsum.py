@@ -1,4 +1,5 @@
 import pytest
+import torch
 
 from bert_summarizer.config import BertSumExtConfig, BertSumAbsConfig
 from bert_summarizer.models.bertsum import BertSumExt, BertSumAbsDecoder, BertSumAbs
@@ -88,6 +89,51 @@ class TestBertSumAbsDecoder:
         assert layer_norm_2.normalized_shape[0] == config.hidden_size
         drop = transformer.drop
         assert drop.p == config.hidden_dropout_prob
+
+    @pytest.mark.parametrize('labels,return_dict,expected_len', [
+        (None, None, 3),
+        (None, True, 2),
+        (True, None, 4),
+        (True, True, 3),
+    ])
+    def test_forward(self, config, model, labels, return_dict, expected_len):
+        batch_size = 32
+        hidden_size = config.hidden_size
+        vocab_size = config.vocab_size
+        src_len = 512
+        tgt_len = 64
+
+        input_ids = torch.randint(vocab_size, (batch_size, tgt_len))
+        outputs = model(
+            input_ids=input_ids,
+            encoder_input_ids=torch.randint(vocab_size, (batch_size, src_len)),
+            encoder_hidden_states=torch.rand(
+                (batch_size, src_len, hidden_size)
+            ),
+            encoder_attention_mask=torch.ones((batch_size, src_len)),
+            labels=input_ids if labels else None,
+            return_dict=return_dict,
+        )
+
+        assert len(outputs) == expected_len
+
+        loss = logits = None
+        if return_dict:
+            loss = outputs.loss
+            logits = outputs.logits
+        else:
+            if labels:
+                loss, logits, _, _ = outputs
+            else:
+                logits = outputs[0]
+
+        if loss is not None:
+            assert isinstance(loss.item(), float)
+
+        assert len(logits.size()) == 3
+        assert logits.size(0) == batch_size
+        assert logits.size(1) == tgt_len
+        assert logits.size(2) == vocab_size
 
 
 class TestBertSumAbs:
