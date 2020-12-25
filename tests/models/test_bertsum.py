@@ -6,7 +6,16 @@ from bert_summarizer.models.bertsum import BertSumExt, BertSumAbsDecoder, BertSu
 
 
 class TestBertSumExt:
-    pass
+    @pytest.fixture
+    def config(self):
+        return BertSumExtConfig()
+
+    @pytest.fixture
+    def model(self, config):
+        return BertSumExt(config)
+
+    def test_network_structure(self, config, model):
+        assert len(model.encoder.layers) == config.encoder.num_hidden_layers
 
 
 class TestBertSumAbsDecoder:

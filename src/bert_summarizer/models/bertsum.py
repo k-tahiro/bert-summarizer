@@ -33,7 +33,17 @@ class BertSumExt(BertPreTrainedModel):
         super().__init__(config)
 
         self.bert = BertModel.from_pretrained(config.base_model_name_or_path)
-        self.encoder = BertEncoder(config)
+        self.encoder = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(
+                config.hidden_size,
+                config.encoder.num_attention_heads,
+                dim_feedforward=config.encoder.intermediate_size,
+                dropout=config.encoder.attention_probs_dropout_prob,
+                activation=config.encoder.hidden_act,
+            ),
+            config.encoder.num_hidden_layers,
+            nn.LayerNorm(config.hidden_size, eps=config.encoder.layer_norm_eps)
+        )
         self.classifier = nn.Sequential(
             nn.Linear(config.hidden_size, 1, bias=True),
             nn.Sigmoid()
