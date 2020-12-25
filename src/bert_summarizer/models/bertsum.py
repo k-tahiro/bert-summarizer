@@ -169,20 +169,20 @@ class BertSumAbsDecoder(BertLMHeadModel):
     ):
         logger.debug(f'kwargs={kwargs}')
 
-        # Use OpenNMT-py TransformerDecoder
-        src = kwargs['encoder_input_ids'].unsqueeze(-1).transpose(0, 1)
-        tgt = input_ids.unsqueeze(-1).transpose(0, 1)
-        memory_bank = enc_hidden = encoder_hidden_states.transpose(0, 1)
+        tgt = self.embeddings(input_ids).transpose(0, 1)
+        memory = encoder_hidden_states.transpose(0, 1)
+        tgt_key_padding_mask = attention_mask ^ True
+        memory_key_padding_mask = encoder_attention_mask ^ True
 
-        self.decoder.init_state(src, memory_bank, enc_hidden)
-        dec_outs, attns = self.decoder(
+        output = self.decoder(
             tgt,
-            memory_bank,
-            memory_lengths=encoder_attention_mask.sum(axis=1)
+            memory,
+            tgt_key_padding_mask=tgt_key_padding_mask,
+            memory_key_padding_mask=memory_key_padding_mask
         )
 
         # transformers style loss calculation
-        decoder_outputs = dec_outs.transpose(0, 1)
+        decoder_outputs = output.transpose(0, 1)
         prediction_scores = self.generator[0](decoder_outputs)
 
         lm_loss = None
@@ -211,7 +211,7 @@ class BertSumAbsDecoder(BertLMHeadModel):
             past_key_values=None,
             hidden_states=None,
             attentions=None,
-            cross_attentions=attns['std'],
+            cross_attentions=None,
         )
 
 

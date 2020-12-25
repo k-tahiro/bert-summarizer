@@ -177,14 +177,29 @@ class TestBertSumAbsDecoder:
         src_len = 512
         tgt_len = 64
 
-        input_ids = torch.randint(vocab_size, (batch_size, tgt_len))
+        input_ids = torch.randint(
+            vocab_size,
+            (batch_size, tgt_len),
+            dtype=torch.long
+        )
         outputs = model(
             input_ids=input_ids,
-            encoder_input_ids=torch.randint(vocab_size, (batch_size, src_len)),
-            encoder_hidden_states=torch.rand(
-                (batch_size, src_len, hidden_size)
+            attention_mask=torch.ones(
+                (batch_size, tgt_len),
+                dtype=torch.long
             ),
-            encoder_attention_mask=torch.ones((batch_size, src_len)),
+            encoder_input_ids=torch.randint(
+                vocab_size,
+                (batch_size, src_len),
+                dtype=torch.long
+            ),
+            encoder_hidden_states=torch.rand(
+                (batch_size, src_len, hidden_size),
+            ),
+            encoder_attention_mask=torch.ones(
+                (batch_size, src_len),
+                dtype=torch.long
+            ),
             labels=input_ids if labels else None,
             return_dict=return_dict,
         )
