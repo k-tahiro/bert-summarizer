@@ -1,8 +1,16 @@
+import os
+
 import pytest
 import torch
 
 from bert_summarizer.config import BertSumExtConfig, BertSumAbsConfig
 from bert_summarizer.models.bertsum import BertSumExt, BertSumAbsDecoder, BertSumAbs
+
+
+skip_on_ga = pytest.mark.skipif(
+    os.getenv('TEST_ENVIRONMENT') == 'GitHub Actions',
+    reason='Skip unittest to save memory'
+)
 
 
 class TestBertSumExt:
@@ -29,6 +37,7 @@ class TestBertSumExt:
         assert model.classifier[0].in_features == config.hidden_size
         assert model.classifier[0].out_features == 1
 
+    @skip_on_ga
     @pytest.mark.parametrize('cls_mask,labels,return_dict,expected_len', [
         (
             torch.tensor([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
@@ -192,6 +201,7 @@ class TestBertSumAbsDecoder:
         drop = transformer.drop
         assert drop.p == config.hidden_dropout_prob
 
+    @skip_on_ga
     @pytest.mark.parametrize('labels,return_dict,expected_len', [
         (None, None, 3),
         (None, True, 2),
