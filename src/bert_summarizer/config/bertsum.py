@@ -9,19 +9,10 @@ logger = getLogger(__name__)
 
 
 class BertSumExtConfig(BertConfig):
-    REQUIRED_ENCODER_CONFIGS = {
-        'num_hidden_layers',
-        'num_attention_heads',
-        'intermediate_size',
-        'hidden_act',
-        'attention_probs_dropout_prob',
-        'layer_norm_eps'
-    }
-
     def __init__(
         self,
         base_model_name_or_path: str = 'bert-base-uncased',
-        encoder: Optional[Dict[str, Any]] = None,
+        encoder: Optional[BertConfig] = None,
         encoder_num_hidden_layers: int = 12,
         encoder_num_attention_heads: int = 12,
         encoder_intermediate_size: int = 3072,
@@ -35,10 +26,9 @@ class BertSumExtConfig(BertConfig):
         config.update(kwargs)
 
         if encoder:
-            assert self.REQUIRED_ENCODER_CONFIGS <= encoder.keys()
             encoder_config = encoder
         else:
-            encoder_config = dict(
+            encoder_config = BertConfig(
                 num_hidden_layers=encoder_num_hidden_layers,
                 num_attention_heads=encoder_num_attention_heads,
                 intermediate_size=encoder_intermediate_size,
