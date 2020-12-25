@@ -51,6 +51,16 @@ class TestBertSumExtConfig:
         assert base_model_name_or_path == default_model_name_or_path
         assert encoder_config == default_ext_encoder_config
 
+    def test_custom_config(self, default_bert_config):
+        config = BertSumExtConfig(encoder=default_bert_config)
+        assert config.encoder == default_bert_config
+
+    def test_error_config(self):
+        with pytest.raises(AssertionError):
+            config = BertSumExtConfig(
+                encoder=dict(invalid_key='invalid_value')
+            )
+
 
 class TestBertSumAbsConfig:
     def test_default_config(
