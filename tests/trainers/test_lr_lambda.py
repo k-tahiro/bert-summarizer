@@ -39,7 +39,7 @@ class TestGetScheduler:
         (10000, [10000, 10000]),
         ([10000, 20000], [10000, 20000])
     ])
-    def test_get_multi_transformer_schedule_with_warmup(
+    def test_get_transformer_schedule_with_warmup(
         self,
         optimizer,
         num_warmup_steps,
