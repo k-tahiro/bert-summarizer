@@ -17,14 +17,16 @@ logger = getLogger(__name__)
 class EncoderDecoderTrainer(Trainer):
     NO_DECAY = {'bias', 'LayerNorm.weight'}
 
-    def __init__(self,
-                 model: PreTrainedModel,
-                 args: TrainingArguments,
-                 encoder_learning_rate: float = 0.002,
-                 decoder_learning_rate: float = 0.2,
-                 encoder_warmup_steps: int = 20000,
-                 decoder_warmup_steps: int = 10000,
-                 **kwargs):
+    def __init__(
+        self,
+        model: PreTrainedModel,
+        args: TrainingArguments,
+        encoder_learning_rate: float = 0.002,
+        decoder_learning_rate: float = 0.2,
+        encoder_warmup_steps: int = 20000,
+        decoder_warmup_steps: int = 10000,
+        **kwargs
+    ):
         logger.info(f'# of encoder parameters={get_n_params(model.encoder)}')
         logger.info(f'# of decoder parameters={get_n_params(model.decoder)}')
 
