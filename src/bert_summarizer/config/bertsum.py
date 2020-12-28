@@ -41,6 +41,11 @@ class BertSumExtConfig(BertConfig):
         super().__init__(**config)
         self.base_model_name_or_path = base_model_name_or_path
 
+    def to_dict(self):
+        output = super().to_dict()
+        output['encoder'] = self.encoder.to_dict()
+        return output
+
 
 class BertSumAbsConfig(EncoderDecoderConfig):
     def __init__(
