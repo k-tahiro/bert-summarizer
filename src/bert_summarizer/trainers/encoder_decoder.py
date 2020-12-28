@@ -80,7 +80,7 @@ class EncoderDecoderTrainer(Trainer):
             },
         ]
 
-    def log(self, logs: Dict[str, float], iterator: Optional[tqdm] = None) -> None:
+    def log(self, logs: Dict[str, float]) -> None:
         lrs = self.lr_scheduler.get_last_lr()
         if self.is_given_optims:
             for i, lr in enumerate(lrs):
@@ -92,4 +92,4 @@ class EncoderDecoderTrainer(Trainer):
             logs['learning_rate/decoder_wo_decay'] = lrs[3]
 
         logs.pop('learning_rate', None)
-        super().log(logs, iterator)
+        super().log(logs)
