@@ -114,10 +114,9 @@ class TestBertSumExt:
         if loss is not None:
             assert isinstance(loss.item(), float)
 
-        assert len(logits.size()) == 3
+        assert len(logits.size()) == 2
         assert logits.size(0) == batch_size
         assert logits.size(1) == input_size
-        assert logits.size(2) == 1
 
 
 class TestBertSumAbsDecoder:
