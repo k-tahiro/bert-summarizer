@@ -74,7 +74,7 @@ class BertSumExt(BertPreTrainedModel):
         )
         cls_output = cls_output.transpose(0, 1)
 
-        logits = self.classifier(cls_output)
+        logits = self.classifier(cls_output).squeeze(2)
 
         loss = None
         if labels is not None:
