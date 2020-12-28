@@ -49,11 +49,11 @@ class TestBertSumExtConfig:
 
         assert config == default_bert_config.to_dict()
         assert base_model_name_or_path == default_model_name_or_path
-        assert encoder_config.to_dict() == default_ext_encoder_config.to_dict()
+        assert encoder_config == default_ext_encoder_config.to_dict()
 
     def test_custom_config(self, default_bert_config):
         config = BertSumExtConfig(encoder=default_bert_config)
-        assert config.encoder.to_dict() == default_bert_config.to_dict()
+        assert config.encoder == default_bert_config
 
 
 class TestBertSumAbsConfig:
