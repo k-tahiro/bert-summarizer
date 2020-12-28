@@ -29,8 +29,6 @@ class EncoderDecoderTrainer(Trainer):
         logger.info(f'# of encoder parameters={get_n_params(model.encoder)}')
         logger.info(f'# of decoder parameters={get_n_params(model.decoder)}')
 
-        super(EncoderDecoderTrainer, self).__init__(model, args, **kwargs)
-
         self.is_given_optims = 'optimizers' in kwargs
         if not self.is_given_optims:
             encoder_params = self._get_params(
@@ -57,6 +55,7 @@ class EncoderDecoderTrainer(Trainer):
             optimizers = (optimizer, lr_scheduler)
             kwargs['optimizers'] = optimizers
 
+        super(EncoderDecoderTrainer, self).__init__(model, args, **kwargs)
 
     @classmethod
     def _get_params(cls, model: nn.Module, weight_decay: float, learning_rate: float) -> list:
