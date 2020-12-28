@@ -1,21 +1,33 @@
 import pytest
-from transformers import AutoConfig
+from transformers import AutoConfig, BertConfig
 
 from bert_summarizer.config.bertsum import BertSumExtConfig, BertSumAbsConfig
 
 
 @pytest.fixture
-def default_encoder_model_name_or_path():
+def default_model_name_or_path():
     return 'bert-base-uncased'
 
 
 @pytest.fixture
-def default_encoder_config():
-    return AutoConfig.from_pretrained('bert-base-uncased').to_dict()
+def default_bert_config():
+    return AutoConfig.from_pretrained('bert-base-uncased')
 
 
 @pytest.fixture
-def default_decoder_config():
+def default_ext_encoder_config():
+    return BertConfig(
+        num_hidden_layers=12,
+        num_attention_heads=12,
+        intermediate_size=3072,
+        hidden_act='gelu',
+        attention_probs_dropout_prob=0.1,
+        layer_norm_eps=1e-12
+    )
+
+
+@pytest.fixture
+def default_decoder_config_dict():
     config = AutoConfig.from_pretrained('bert-base-uncased').to_dict()
     config['is_decoder'] = True
     config['add_cross_attention'] = True
@@ -23,20 +35,38 @@ def default_decoder_config():
 
 
 class TestBertSumExtConfig:
-    pass
+    def test_default_config(
+        self,
+        default_model_name_or_path,
+        default_bert_config,
+        default_ext_encoder_config
+    ):
+        config = BertSumExtConfig()
+        config = config.to_dict()
+
+        base_model_name_or_path = config.pop('base_model_name_or_path')
+        encoder_config = config.pop('encoder')
+
+        assert config == default_bert_config.to_dict()
+        assert base_model_name_or_path == default_model_name_or_path
+        assert encoder_config == default_ext_encoder_config.to_dict()
+
+    def test_custom_config(self, default_bert_config):
+        config = BertSumExtConfig(encoder=default_bert_config)
+        assert config.encoder == default_bert_config
 
 
 class TestBertSumAbsConfig:
     def test_default_config(
         self,
-        default_encoder_model_name_or_path,
-        default_encoder_config,
-        default_decoder_config
+        default_model_name_or_path,
+        default_bert_config,
+        default_decoder_config_dict
     ):
         config = BertSumAbsConfig()
-        assert config.encoder_model_name_or_path == default_encoder_model_name_or_path
-        assert config.encoder.to_dict() == default_encoder_config
-        assert config.decoder.to_dict() == default_decoder_config
+        assert config.encoder_model_name_or_path == default_model_name_or_path
+        assert config.encoder.to_dict() == default_bert_config.to_dict()
+        assert config.decoder.to_dict() == default_decoder_config_dict
 
     @pytest.mark.parametrize('kwargs', [
         dict(
