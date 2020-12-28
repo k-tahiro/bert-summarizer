@@ -45,9 +45,9 @@ class EncoderDecoderTrainer(Trainer):
                 decoder_learning_rate
             )
             params = encoder_params + decoder_params
-            self.optimizer = AdamW(
+            optimizer = AdamW(
                 params,
-                eps=self.args.adam_epsilon,
+                eps=args.adam_epsilon,
             )
 
             encoder_lr_lambda = partial(
