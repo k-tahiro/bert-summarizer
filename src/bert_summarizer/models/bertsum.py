@@ -79,8 +79,8 @@ class BertSumExt(BertPreTrainedModel):
         loss = None
         if labels is not None:
             loss_fct = nn.MSELoss()
-            loss = loss_fct(logits[cls_mask].view(-1),
-                            labels[cls_mask].view(-1))
+            loss = loss_fct(logits[cls_mask == 1].view(-1),
+                            labels[cls_mask == 1].view(-1))
 
         if not return_dict:
             output = (logits,) + outputs[2:]
