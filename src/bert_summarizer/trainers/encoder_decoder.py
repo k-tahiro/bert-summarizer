@@ -34,12 +34,16 @@ class EncoderDecoderTrainer(Trainer):
 
         self.is_given_optims = 'optimizers' in kwargs
         if not self.is_given_optims:
-            encoder_params = self._get_params(self.model.encoder,
-                                              self.args.weight_decay,
-                                              encoder_learning_rate)
-            decoder_params = self._get_params(self.model.decoder,
-                                              self.args.weight_decay,
-                                              decoder_learning_rate)
+            encoder_params = self._get_params(
+                model.encoder,
+                args.weight_decay,
+                encoder_learning_rate
+            )
+            decoder_params = self._get_params(
+                model.decoder,
+                args.weight_decay,
+                decoder_learning_rate
+            )
             params = encoder_params + decoder_params
             self.optimizer = AdamW(
                 params,
