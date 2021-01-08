@@ -163,6 +163,12 @@ class BertSumExtDataset(BertSumDataset):
         bos_token_id = tokenizer.cls_token_id
         eos_token_id = tokenizer.sep_token_id
         for data, sents_src, sents_tgt in zip(self.data, self.sentences, tgt):
+            sents_tgt = [
+                str(sent)
+                for tgt in sents_tgt
+                for sent in self.nlp(tgt).sents
+            ]  # to support multiple sentences in one sentence
+
             data['cls_mask'] = [
                 1 * (id_ == bos_token_id)
                 for id_ in data['input_ids']
