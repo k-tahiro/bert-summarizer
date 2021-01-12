@@ -49,6 +49,17 @@ class BertSumExt(BertPreTrainedModel):
             nn.Sigmoid()
         )
 
+        if config.encoder.initializer_range != 0.0:
+            for p in self.encoder.layers.parameters():
+                p.data.uniform_(
+                    -config.encoder.initializer_range,
+                    config.encoder.initializer_range
+                )
+        if config.encoder.xavier_initialization:
+            for p in self.encoder.layers.parameters():
+                if p.dim() > 1:
+                    xavier_uniform_(p)
+
     def forward(
         self,
         input_ids=None,
