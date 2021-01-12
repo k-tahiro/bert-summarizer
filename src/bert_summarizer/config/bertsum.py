@@ -16,7 +16,7 @@ class BertSumExtConfig(BertConfig):
         encoder_num_attention_heads: int = 8,
         encoder_intermediate_size: int = 2048,
         encoder_hidden_act: str = 'gelu',
-        encoder_attention_probs_dropout_prob: float = 0.2,
+        encoder_attention_probs_dropout_prob: float = 0.1,
         encoder_layer_norm_eps: float = 1e-6,
         encoder_initializer_range: float = 0.0,
         encoder_xavier_initialization: bool = True,
