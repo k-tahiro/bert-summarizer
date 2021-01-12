@@ -47,7 +47,7 @@ def main():
     basicConfig(level='INFO')
 
     dataset = create_dataset()
-    data_collator = DataCollatorWithPadding(dataset.src_tokenizer)
+    data_collator = DataCollatorWithPadding(dataset.tokenizer)
     model = create_model(dataset.model_name)
 
     args = TrainingArguments('BertSumExt')
