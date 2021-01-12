@@ -36,7 +36,7 @@ class BertSumDataset(Dataset):
         self.nlp = nlp
 
         # create data
-        encoded_src = self._encode(self.src_tokenizer, src)
+        encoded_src = self._encode(self.tokenizer, src)
         self.data = encoded_src
 
     @property
@@ -44,7 +44,7 @@ class BertSumDataset(Dataset):
         return 'bert-base-japanese' in self.model_name
 
     @property
-    def src_tokenizer(self):
+    def tokenizer(self):
         if self.is_japanese:
             return BertSumJapaneseTokenizer.from_pretrained(self.model_name)
         else:
@@ -159,7 +159,7 @@ class BertSumExtDataset(BertSumDataset):
         if tgt is None:
             return
 
-        tokenizer = self.src_tokenizer
+        tokenizer = self.tokenizer
         bos_token_id = tokenizer.cls_token_id
         eos_token_id = tokenizer.sep_token_id
         for data, sents_src, sents_tgt in zip(self.data, self.sentences, tgt):
