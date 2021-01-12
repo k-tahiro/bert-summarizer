@@ -191,10 +191,10 @@ class BertSumExtDataset(BertSumDataset):
             for m in data['cls_mask']:
                 if m:
                     sent = sents_src[index]
-                    data['label'].append(1. * (sent in sents_tgt))
+                    data['label'].append(1 * (sent in sents_tgt))
                     index += 1
                 else:
-                    data['label'].append(0.)
+                    data['label'].append(0)
 
 
 class BertSumAbsDataset(BertSumDataset):
