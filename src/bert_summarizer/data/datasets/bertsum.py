@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Union
 from torch.utils.data import Dataset
 
 from ...tokenizers import BertSumTokenizer, BertSumJapaneseTokenizer
+from ...utils.bertsum import GreedySelector
 
 logger = getLogger(__name__)
 
@@ -152,22 +153,33 @@ class BertSumExtDataset(BertSumDataset):
         self,
         model_name: str,
         src: List[str],
-        tgt: Optional[List[List[str]]] = None
+        tgt: Optional[Union[List[str], List[List[str]]]] = None
     ):
         super().__init__(model_name, src, tgt)
 
-        if tgt is None:
+        if self.tgt is None:
             return
 
         tokenizer = self.tokenizer
         bos_token_id = tokenizer.cls_token_id
         eos_token_id = tokenizer.sep_token_id
-        for data, sents_src, sents_tgt in zip(self.data, self.sentences, tgt):
-            sents_tgt = [
-                str(sent)
-                for tgt in sents_tgt
-                for sent in self.nlp(tgt).sents
-            ]  # to support multiple sentences in one sentence
+        self.gs = GreedySelector(tokenizer)
+
+        generate_tgt = isinstance(self.tgt[0], str)
+
+        for data, sents_src, sents_tgt in zip(self.data, self.sentences, self.tgt):
+            if generate_tgt:
+                sents_tgt = [
+                    str(sent)
+                    for sent in self.nlp(sents_tgt).sents
+                ]
+                sents_tgt = self.gs(sents_src, sents_tgt)
+            else:
+                sents_tgt = [
+                    str(sent)
+                    for text in sents_tgt
+                    for sent in self.nlp(text).sents
+                ]  # to support multiple sentences in one sentence
 
             data['cls_mask'] = [
                 1 * (id_ == bos_token_id)
