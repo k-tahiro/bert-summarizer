@@ -17,12 +17,14 @@ def default_bert_config():
 @pytest.fixture
 def default_ext_encoder_config():
     return BertConfig(
-        num_hidden_layers=12,
-        num_attention_heads=12,
-        intermediate_size=3072,
+        num_hidden_layers=2,
+        num_attention_heads=8,
+        intermediate_size=2048,
         hidden_act='gelu',
         attention_probs_dropout_prob=0.1,
-        layer_norm_eps=1e-12
+        layer_norm_eps=1e-6,
+        initializer_range=0.0,
+        xavier_initialization=True,
     )
 
 
