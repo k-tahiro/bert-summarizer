@@ -63,7 +63,7 @@ def main():
         dataset,
         batch_size=1,
         collate_fn=data_collator
-    )))
+    ))).to(model.device)
     loss, logits = model(**data)
     logger.info(f'{loss=}')
     logger.info(f'{logits[data["cls_mask"] == 1]=}')
