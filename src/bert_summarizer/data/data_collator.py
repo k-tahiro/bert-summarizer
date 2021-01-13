@@ -23,15 +23,16 @@ class DataCollatorWithPaddingWithAdditionalFeatures(DataCollatorWithPadding):
             pad_to_multiple_of=self.pad_to_multiple_of,
             return_tensors='pt',
         )
+
+        max_length = batch['input_ids'].size(1)
         batch.update({
-            key: self.pad(value)
+            key: self.pad(value, max_length)
             for key, value in additional_features.items()
         })
 
         return batch
 
-    def pad(self, feature: List[Union[List[int], torch.Tensor]]) -> torch.Tensor:
-        max_length = self.tokenizer.model_max_length
+    def pad(self, feature: List[Union[List[int], torch.Tensor]], max_length: int) -> torch.Tensor:
         matrix = []
         for row in feature:
             difference = max_length - len(row)
