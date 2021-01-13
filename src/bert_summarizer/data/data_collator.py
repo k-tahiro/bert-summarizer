@@ -1,8 +1,43 @@
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Union
 
 import torch
 from transformers import DataCollatorWithPadding, PreTrainedTokenizer, PreTrainedTokenizerFast
+
+
+@dataclass
+class DataCollatorWithPaddingWithAdditionalFeatures(DataCollatorWithPadding):
+    additional_features: List[str] = []
+
+    def __call__(self, features: List[Dict[str, Union[List[int], torch.Tensor]]]) -> Dict[str, torch.Tensor]:
+        additional_features = defaultdict(list)
+        for feature in features:
+            for key in self.additional_features:
+                additional_features[key].append(feature.pop(key))
+
+        batch = self.tokenizer.pad(
+            features,
+            padding=self.padding,
+            max_length=self.max_length,
+            pad_to_multiple_of=self.pad_to_multiple_of,
+            return_tensors='pt',
+        )
+        batch.update({
+            key: self.pad(value)
+            for key, value in additional_features.items()
+        })
+
+        return batch
+
+    def pad(self, feature: List[Union[List[int], torch.Tensor]]) -> torch.Tensor:
+        max_length = self.tokenizer.model_max_length
+        matrix = []
+        for row in feature:
+            difference = max_length - len(row)
+            row += [0] * difference
+            matrix.append(row)
+        return torch.tensor(matrix)
 
 
 @dataclass
