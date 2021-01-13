@@ -30,6 +30,10 @@ class DataCollatorWithPaddingWithAdditionalFeatures(DataCollatorWithPadding):
             for key, value in additional_features.items()
         })
 
+        if 'label' in batch:
+            batch['labels'] = batch['label']
+            del batch['label']
+
         return batch
 
     def pad(self, feature: List[Union[List[int], torch.Tensor]], max_length: int) -> torch.Tensor:
