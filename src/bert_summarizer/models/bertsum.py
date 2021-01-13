@@ -83,7 +83,7 @@ class BertSumExt(BertPreTrainedModel):
         sequence_output = outputs[0].transpose(0, 1)
         cls_output = self.encoder(
             sequence_output,
-            src_key_padding_mask=(attention_mask & cls_mask) ^ True,
+            src_key_padding_mask=((attention_mask & cls_mask) ^ True).bool(),
         )
         cls_output = cls_output.transpose(0, 1)
 
