@@ -1,5 +1,5 @@
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Union
 
 import torch
@@ -8,7 +8,7 @@ from transformers import DataCollatorWithPadding, PreTrainedTokenizer, PreTraine
 
 @dataclass
 class DataCollatorWithPaddingWithAdditionalFeatures(DataCollatorWithPadding):
-    additional_features: List[str] = []
+    additional_features: List[str] = field(default_factory=list)
 
     def __call__(self, features: List[Dict[str, Union[List[int], torch.Tensor]]]) -> Dict[str, torch.Tensor]:
         additional_features = defaultdict(list)
