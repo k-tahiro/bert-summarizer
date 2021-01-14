@@ -48,8 +48,8 @@ class DataCollatorWithPaddingWithAdditionalFeatures(DataCollatorWithPadding):
         matrix = []
         for row in feature:
             difference = max_length - len(row)
-            row += [0] * difference
-            matrix.append(row)
+            row_filled = row + [0] * difference
+            matrix.append(row_filled)
         return torch.tensor(matrix)
 
 
