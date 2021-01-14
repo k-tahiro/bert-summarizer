@@ -92,7 +92,7 @@ class BertSumExt(BertPreTrainedModel):
         loss = None
         if labels is not None:
             loss = self.loss(logits, labels.float())
-            loss = (loss * cls_mask.float()).sum()
+            loss = (loss * cls_mask.float()).sum(1).mean()
 
         if not return_dict:
             output = (logits,) + outputs[2:]
