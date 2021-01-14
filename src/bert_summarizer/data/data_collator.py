@@ -14,7 +14,15 @@ class DataCollatorWithPaddingWithAdditionalFeatures(DataCollatorWithPadding):
         additional_features = defaultdict(list)
         for feature in features:
             for key in self.additional_features:
-                additional_features[key].append(feature.pop(key))
+                additional_features[key].append(feature[key])
+        features = [
+            {
+                k: v
+                for k, v in feature.items()
+                if k not in self.additional_features
+            }
+            for feature in features
+        ]
 
         batch = self.tokenizer.pad(
             features,
