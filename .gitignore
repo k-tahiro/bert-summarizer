@@ -127,3 +127,15 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# VSCode
+.vscode
+
+# Python data
+*.pkl
+
+# nn data
+*.pt
+*.pth
+*.tfevents.*
+checkpoint-*
