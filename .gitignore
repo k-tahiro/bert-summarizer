@@ -134,7 +134,7 @@ dmypy.json
 # Python data
 *.pkl
 
-# nn data
+# NN data
 *.pt
 *.pth
 *.tfevents.*
