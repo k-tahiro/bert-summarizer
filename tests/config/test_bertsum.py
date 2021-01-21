@@ -17,12 +17,14 @@ def default_bert_config():
 @pytest.fixture
 def default_ext_encoder_config():
     return BertConfig(
-        num_hidden_layers=12,
-        num_attention_heads=12,
-        intermediate_size=3072,
+        num_hidden_layers=2,
+        num_attention_heads=8,
+        intermediate_size=2048,
         hidden_act='gelu',
         attention_probs_dropout_prob=0.1,
-        layer_norm_eps=1e-12
+        layer_norm_eps=1e-6,
+        initializer_range=0.0,
+        xavier_initialization=True,
     )
 
 
@@ -50,10 +52,6 @@ class TestBertSumExtConfig:
         assert config == default_bert_config.to_dict()
         assert base_model_name_or_path == default_model_name_or_path
         assert encoder_config == default_ext_encoder_config.to_dict()
-
-    def test_custom_config(self, default_bert_config):
-        config = BertSumExtConfig(encoder=default_bert_config)
-        assert config.encoder == default_bert_config
 
 
 class TestBertSumAbsConfig:

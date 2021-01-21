@@ -49,6 +49,19 @@ class BertSumExt(BertPreTrainedModel):
             nn.Sigmoid()
         )
 
+        self.loss = nn.BCELoss(reduction='none')
+
+        if config.encoder.initializer_range != 0.0:
+            for p in self.encoder.layers.parameters():
+                p.data.uniform_(
+                    -config.encoder.initializer_range,
+                    config.encoder.initializer_range
+                )
+        if config.encoder.xavier_initialization:
+            for p in self.encoder.layers.parameters():
+                if p.dim() > 1:
+                    xavier_uniform_(p)
+
     def forward(
         self,
         input_ids=None,
@@ -70,7 +83,7 @@ class BertSumExt(BertPreTrainedModel):
         sequence_output = outputs[0].transpose(0, 1)
         cls_output = self.encoder(
             sequence_output,
-            src_key_padding_mask=(attention_mask & cls_mask) ^ True,
+            src_key_padding_mask=cls_mask.bool() ^ True,
         )
         cls_output = cls_output.transpose(0, 1)
 
@@ -78,9 +91,8 @@ class BertSumExt(BertPreTrainedModel):
 
         loss = None
         if labels is not None:
-            loss_fct = nn.MSELoss()
-            loss = loss_fct(logits[cls_mask == 1].view(-1),
-                            labels[cls_mask == 1].view(-1))
+            loss = self.loss(logits, labels.float())
+            loss = (loss * cls_mask.float()).sum(1).mean()
 
         if not return_dict:
             output = (logits,) + outputs[2:]

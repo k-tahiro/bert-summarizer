@@ -47,7 +47,7 @@ def main():
     basicConfig(level='INFO')
 
     dataset = create_dataset()
-    data_collator = DataCollatorWithPadding(dataset.src_tokenizer)
+    data_collator = DataCollatorWithPadding(dataset.tokenizer)
     model = create_model(dataset.model_name)
 
     args = TrainingArguments('BertSumExt')
@@ -63,7 +63,7 @@ def main():
         dataset,
         batch_size=1,
         collate_fn=data_collator
-    )))
+    ))).to(model.device)
     loss, logits = model(**data)
     logger.info(f'{loss=}')
     logger.info(f'{logits[data["cls_mask"] == 1]=}')
