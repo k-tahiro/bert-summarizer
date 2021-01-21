@@ -1,4 +1,3 @@
-from functools import partial
 from logging import getLogger
 from typing import Dict, Optional
 
@@ -8,7 +7,7 @@ from torch.optim.lr_scheduler import LambdaLR
 from tqdm import tqdm
 from transformers import PreTrainedModel, Trainer, TrainingArguments
 
-from .lr_lambda import linear_then_invsqrt
+from .lr_lambda import get_transformer_schedule_with_warmup
 from ..utils.nn import get_n_params
 
 logger = getLogger(__name__)
@@ -17,45 +16,46 @@ logger = getLogger(__name__)
 class EncoderDecoderTrainer(Trainer):
     NO_DECAY = {'bias', 'LayerNorm.weight'}
 
-    def __init__(self,
-                 model: PreTrainedModel,
-                 args: TrainingArguments,
-                 encoder_learning_rate: float = 0.002,
-                 decoder_learning_rate: float = 0.2,
-                 encoder_warmup_steps: int = 20000,
-                 decoder_warmup_steps: int = 10000,
-                 **kwargs):
+    def __init__(
+        self,
+        model: PreTrainedModel,
+        args: TrainingArguments,
+        encoder_learning_rate: float = 0.002,
+        decoder_learning_rate: float = 0.2,
+        encoder_warmup_steps: int = 20000,
+        decoder_warmup_steps: int = 10000,
+        **kwargs
+    ):
         logger.info(f'# of encoder parameters={get_n_params(model.encoder)}')
         logger.info(f'# of decoder parameters={get_n_params(model.decoder)}')
 
-        super(EncoderDecoderTrainer, self).__init__(model, args, **kwargs)
-
         self.is_given_optims = 'optimizers' in kwargs
         if not self.is_given_optims:
-            encoder_params = self._get_params(self.model.encoder,
-                                              self.args.weight_decay,
-                                              encoder_learning_rate)
-            decoder_params = self._get_params(self.model.decoder,
-                                              self.args.weight_decay,
-                                              decoder_learning_rate)
+            encoder_params = self._get_params(
+                model.encoder,
+                args.weight_decay,
+                encoder_learning_rate
+            )
+            decoder_params = self._get_params(
+                model.decoder,
+                args.weight_decay,
+                decoder_learning_rate
+            )
             params = encoder_params + decoder_params
-            self.optimizer = AdamW(
+            optimizer = AdamW(
                 params,
-                eps=self.args.adam_epsilon,
+                eps=args.adam_epsilon,
             )
 
-            encoder_lr_lambda = partial(
-                linear_then_invsqrt,
-                encoder_warmup_steps
-            )
-            decoder_lr_lambda = partial(
-                linear_then_invsqrt,
-                decoder_warmup_steps
+            lr_scheduler = get_transformer_schedule_with_warmup(
+                optimizer,
+                [encoder_warmup_steps] * 2 + [decoder_warmup_steps] * 2
             )
 
-            lr_lambdas = [encoder_lr_lambda] * 2 + [decoder_lr_lambda] * 2
+            optimizers = (optimizer, lr_scheduler)
+            kwargs['optimizers'] = optimizers
 
-            self.lr_scheduler = LambdaLR(self.optimizer, lr_lambdas)
+        super(EncoderDecoderTrainer, self).__init__(model, args, **kwargs)
 
     @classmethod
     def _get_params(cls, model: nn.Module, weight_decay: float, learning_rate: float) -> list:
@@ -80,7 +80,7 @@ class EncoderDecoderTrainer(Trainer):
             },
         ]
 
-    def log(self, logs: Dict[str, float], iterator: Optional[tqdm] = None) -> None:
+    def log(self, logs: Dict[str, float]) -> None:
         lrs = self.lr_scheduler.get_last_lr()
         if self.is_given_optims:
             for i, lr in enumerate(lrs):
@@ -92,4 +92,4 @@ class EncoderDecoderTrainer(Trainer):
             logs['learning_rate/decoder_wo_decay'] = lrs[3]
 
         logs.pop('learning_rate', None)
-        super().log(logs, iterator)
+        super().log(logs)

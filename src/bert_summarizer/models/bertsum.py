@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 from onmt.decoders import TransformerDecoder
 from onmt.modules import Embeddings
@@ -19,7 +19,7 @@ from transformers.modeling_bert import (
     BertPooler,
     BertOnlyMLMHead
 )
-from transformers.modeling_outputs import CausalLMOutputWithCrossAttentions
+from transformers.modeling_outputs import CausalLMOutputWithCrossAttentions, SequenceClassifierOutput
 
 from ..config import BertSumExtConfig, BertSumAbsConfig
 
@@ -33,23 +33,77 @@ class BertSumExt(BertPreTrainedModel):
         super().__init__(config)
 
         self.bert = BertModel.from_pretrained(config.base_model_name_or_path)
-
-        self.encoder = nn.Sequential(
-            BertEncoder(config),
-            BertPooler(config)
+        self.encoder = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(
+                config.hidden_size,
+                config.encoder.num_attention_heads,
+                dim_feedforward=config.encoder.intermediate_size,
+                dropout=config.encoder.attention_probs_dropout_prob,
+                activation=config.encoder.hidden_act,
+            ),
+            config.encoder.num_hidden_layers,
+            nn.LayerNorm(config.hidden_size, eps=config.encoder.layer_norm_eps)
         )
-        self.cls = BertOnlyMLMHead(config)
+        self.classifier = nn.Sequential(
+            nn.Linear(config.hidden_size, 1, bias=True),
+            nn.Sigmoid()
+        )
 
-    def forward(self,
-                src: Dict[str, torch.Tensor],
-                cls_idxs: Union[None, List[List[int]], torch.Tensor] = None):
-        if cls_idxs is None:
-            cls_idxs = src['input_ids'] == self.config.cls_token_id
+        self.loss = nn.BCELoss(reduction='none')
 
-        x = self.bert(**src)[0]
-        x = self.encoder(x, encoder_attention_mask=cls_idxs)
-        x = self.cls(x)
-        return x
+        if config.encoder.initializer_range != 0.0:
+            for p in self.encoder.layers.parameters():
+                p.data.uniform_(
+                    -config.encoder.initializer_range,
+                    config.encoder.initializer_range
+                )
+        if config.encoder.xavier_initialization:
+            for p in self.encoder.layers.parameters():
+                if p.dim() > 1:
+                    xavier_uniform_(p)
+
+    def forward(
+        self,
+        input_ids=None,
+        attention_mask=None,
+        token_type_ids=None,
+        cls_mask=None,
+        labels=None,
+        return_dict=None,
+        **kwargs
+    ):
+        outputs = self.bert(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            token_type_ids=token_type_ids,
+            return_dict=return_dict,
+            **kwargs
+        )
+
+        sequence_output = outputs[0].transpose(0, 1)
+        cls_output = self.encoder(
+            sequence_output,
+            src_key_padding_mask=cls_mask.bool() ^ True,
+        )
+        cls_output = cls_output.transpose(0, 1)
+
+        logits = self.classifier(cls_output).squeeze(2)
+
+        loss = None
+        if labels is not None:
+            loss = self.loss(logits, labels.float())
+            loss = (loss * cls_mask.float()).sum(1).mean()
+
+        if not return_dict:
+            output = (logits,) + outputs[2:]
+            return ((loss,) + output) if loss is not None else output
+
+        return SequenceClassifierOutput(
+            loss=loss,
+            logits=logits,
+            hidden_states=outputs.hidden_states,
+            attentions=outputs.attentions,
+        )
 
 
 class BertSumAbsDecoder(BertPreTrainedModel):
@@ -105,6 +159,8 @@ class BertSumAbsDecoder(BertPreTrainedModel):
             config.vocab_size,
             ignore_index=config.pad_token_id
         )
+
+        self.tie_weights()
 
     def get_input_embeddings(self) -> nn.Module:
         return self.decoder.embeddings.make_embedding.emb_luts[0]
