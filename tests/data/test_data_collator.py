@@ -15,7 +15,7 @@ class TestEncoderDecoderDataCollatorWithPadding:
     @pytest.fixture
     def data_collator(self, dataset):
         return EncoderDecoderDataCollatorWithPadding(
-            tokenizer=dataset.src_tokenizer
+            tokenizer=dataset.tokenizer
         )
 
     @pytest.fixture
@@ -55,7 +55,7 @@ class TestEncoderDecoderDataCollatorWithPadding:
             ]),
         }
 
-    def test_call(self, data_collator,  encoded_data_abs, expected_batch):
+    def test_call(self, data_collator, encoded_data_abs, expected_batch):
         batch = data_collator(encoded_data_abs)
         assert len(batch) == len(expected_batch)
         for k in batch:
