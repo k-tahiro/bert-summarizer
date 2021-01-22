@@ -65,9 +65,9 @@ def main():
         collate_fn=data_collator
     ))).to(model.device)
     loss, logits = model(**data)
-    logger.info(f'{loss=}')
-    logger.info(f'{logits[data["cls_mask"] == 1]=}')
-    logger.info(f'{data["labels"][data["cls_mask"] == 1]=}')
+    logger.info(f'loss={loss}')
+    logger.info(f'logits={logits[data["cls_mask"] == 1]}')
+    logger.info(f'labels={data["labels"][data["cls_mask"] == 1]}')
 
 
 if __name__ == '__main__':

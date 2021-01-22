@@ -106,7 +106,7 @@ class BertSumDataset(Dataset):
 
         assert len(input_ids) == len(token_type_ids), \
             'concatenated length mismatch: ' \
-            f'{len(input_ids)=} != {len(token_type_ids)=}'
+            f'len(input_ids)={len(input_ids)} != len(token_type_ids)={len(token_type_ids)}'
 
         return {
             'input_ids': input_ids,
@@ -134,7 +134,7 @@ class BertSumDataset(Dataset):
 
         assert len(input_ids) == len(token_type_ids), \
             'truncated length mismatch: ' \
-            f'{len(input_ids)=} != {len(token_type_ids)=}'
+            f'len(input_ids)={len(input_ids)} != len(token_type_ids)={len(token_type_ids)}'
 
         return {
             'input_ids': input_ids,
