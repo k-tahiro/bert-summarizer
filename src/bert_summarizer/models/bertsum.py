@@ -187,7 +187,7 @@ class BertSumAbsDecoder(BertPreTrainedModel):
         return_dict=None,
         **kwargs
     ):
-        logger.debug(f'{kwargs=}')
+        logger.debug(f'kwargs={kwargs}')
 
         # Use OpenNMT-py TransformerDecoder
         src = kwargs['encoder_input_ids'].unsqueeze(-1).transpose(0, 1)
@@ -253,7 +253,7 @@ class BertSumAbs(EncoderDecoderModel):
 
         super().__init__(config=config, encoder=encoder, decoder=decoder)
 
-        logger.debug(f'{self.config=}')
+        logger.debug(f'self.config={self.config}')
 
         enc_emb_weight = self.encoder.get_input_embeddings().weight.clone().detach()
         dec_emb_weight = self.decoder.get_input_embeddings().weight.clone().detach()

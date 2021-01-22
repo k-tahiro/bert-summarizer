@@ -67,8 +67,8 @@ class BertSumAbsConfig(EncoderDecoderConfig):
         decoder_config['is_decoder'] = True
         decoder_config['add_cross_attention'] = True
 
-        logger.info(f'{encoder_config=}')
-        logger.info(f'{decoder_config=}')
+        logger.info(f'encoder_config={encoder_config}')
+        logger.info(f'decoder_config={decoder_config}')
 
         super().__init__(encoder=encoder_config, decoder=decoder_config)
         self.encoder_model_name_or_path = encoder_model_name_or_path
