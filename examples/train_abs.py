@@ -84,7 +84,7 @@ def main():
         for output in outputs
     ]
 
-    logger.info(f'{results=}')
+    logger.info(f'results={results}')
 
 
 if __name__ == '__main__':
