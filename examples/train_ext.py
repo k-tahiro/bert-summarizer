@@ -9,7 +9,7 @@ from transformers import (
 )
 
 from bert_summarizer.config import BertSumExtConfig
-from bert_summarizer.data import BertSumExtDataset
+from bert_summarizer.data import BertSumExtDataset, DataCollatorWithPaddingWithAdditionalFeatures
 from bert_summarizer.models import BertSumExt
 
 logger = getLogger(__name__)
@@ -47,7 +47,10 @@ def main():
     basicConfig(level='INFO')
 
     dataset = create_dataset()
-    data_collator = DataCollatorWithPadding(dataset.tokenizer)
+    data_collator = DataCollatorWithPaddingWithAdditionalFeatures(
+        dataset.tokenizer,
+        additional_features=['cls_mask', 'label']
+    )
     model = create_model(dataset.model_name)
 
     args = TrainingArguments('BertSumExt')
