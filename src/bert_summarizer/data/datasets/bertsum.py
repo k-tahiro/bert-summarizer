@@ -95,7 +95,7 @@ class BertSumDataset(Dataset):
         sents = [
             [str(s) for s in self.nlp(line).sents]
             for line in text.splitlines()
-            if line and not self.EMPTY_PATTERN.match(line)
+            if line and not self.EMPTY_PATTERN.fullmatch(line)
         ]
         if sents:
             return reduce(lambda x, y: x + y, sents)
