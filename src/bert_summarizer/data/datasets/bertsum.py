@@ -90,14 +90,15 @@ class BertSumDataset(Dataset):
         return encoded_data
 
     def _sentencize(self, text: str) -> List[str]:
-        return reduce(
-            lambda x, y: x + y,
-            [
-                [str(s) for s in self.nlp(line).sents]
-                for line in text.splitlines()
-                if line and not self.EMPTY_PATTERN.match(line)
-            ]
-        )
+        sents = [
+            [str(s) for s in self.nlp(line).sents]
+            for line in text.splitlines()
+            if line and not self.EMPTY_PATTERN.match(line)
+        ]
+        if sents:
+            return reduce(lambda x, y: x + y, sents)
+        else:
+            return []
 
     @staticmethod
     def _concat_sents(
