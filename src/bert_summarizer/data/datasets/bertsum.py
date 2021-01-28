@@ -1,3 +1,4 @@
+import re
 from functools import partial, reduce
 from logging import getLogger
 from typing import Dict, List, Optional, Union
@@ -11,6 +12,8 @@ logger = getLogger(__name__)
 
 
 class BertSumDataset(Dataset):
+    EMPTY_PATTERN = re.compile(r'\s+')
+
     def __init__(
         self,
         model_name: str,
@@ -63,7 +66,7 @@ class BertSumDataset(Dataset):
         sentences = []
         encoded_data = []
         for text in data:
-            sents = list(map(str, self.nlp(text).sents))
+            sents = self._sentencize(text)
             if keep_sents:
                 sentences.append(sents)
             n_sents = len(sents)
@@ -85,6 +88,16 @@ class BertSumDataset(Dataset):
         if keep_sents:
             self.sentences = sentences
         return encoded_data
+
+    def _sentencize(self, text: str) -> List[str]:
+        return reduce(
+            lambda x, y: x + y,
+            [
+                [str(s) for s in self.nlp(line).sents]
+                for line in text.splitlines()
+                if line and not self.EMPTY_PATTERN.match(line)
+            ]
+        )
 
     @staticmethod
     def _concat_sents(
@@ -173,16 +186,13 @@ class BertSumExtDataset(BertSumDataset):
         invalid_data = []
         for data, sents_src, sents_tgt in zip(self.data, self.sentences, self.tgt):
             if generate_tgt:
-                sents_tgt = [
-                    str(sent)
-                    for sent in self.nlp(sents_tgt).sents
-                ]
+                sents_tgt = self._sentencize(sents_tgt)
                 sents_tgt = self.gs(sents_src, sents_tgt)
             else:
                 sents_tgt = [
-                    str(sent)
+                    sent
                     for text in sents_tgt
-                    for sent in self.nlp(text).sents
+                    for sent in self._sentencize(text)
                 ]  # to support multiple sentences in one sentence
 
             data['cls_mask'] = [
