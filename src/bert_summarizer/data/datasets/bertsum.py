@@ -67,6 +67,8 @@ class BertSumDataset(Dataset):
         encoded_data = []
         for text in data:
             sents = self._sentencize(text)
+            if len(sents) == 0:
+                continue
             if keep_sents:
                 sentences.append(sents)
             n_sents = len(sents)
