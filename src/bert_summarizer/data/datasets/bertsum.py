@@ -167,6 +167,10 @@ class BertSumExtDataset(BertSumDataset):
 
         generate_tgt = isinstance(self.tgt[0], str)
 
+        valid_data = []
+        valid_sentences = []
+        valid_tgt = []
+        invalid_data = []
         for data, sents_src, sents_tgt in zip(self.data, self.sentences, self.tgt):
             if generate_tgt:
                 sents_tgt = [
@@ -195,6 +199,28 @@ class BertSumExtDataset(BertSumDataset):
                     index += 1
                 else:
                     data['label'].append(0)
+
+            if sum(data['label']):
+                valid_data.append(data)
+                valid_sentences.append(sents_src)
+                valid_tgt.append(sents_tgt)
+            else:
+                logger.warning(
+                    'Invalid src-tgt pair was given. There are no labels.'
+                )
+                logger.debug(
+                    f'src sentences: {sents_src}\n'
+                    f'tgt sentences: {sents_tgt}'
+                )
+                invalid_data.append({
+                    'src': sents_src,
+                    'tgt': sents_tgt,
+                })
+
+        self.data = valid_data
+        self.sentences = valid_sentences
+        self.tgt = valid_tgt
+        self.invalid_data = invalid_data
 
 
 class BertSumAbsDataset(BertSumDataset):
