@@ -3,6 +3,8 @@ from functools import partial, reduce
 from logging import getLogger
 from typing import Dict, List, Optional, Union
 
+import spacy
+from spacy.lang.en import English
 from torch.utils.data import Dataset
 
 from ...tokenizers import BertSumTokenizer, BertSumJapaneseTokenizer
@@ -30,10 +32,8 @@ class BertSumDataset(Dataset):
 
         # load nlp
         if self.is_japanese:
-            import spacy
             nlp = spacy.load('ja_ginza')
         else:
-            from spacy.lang.en import English
             nlp = English()
             sentencizer = nlp.create_pipe("sentencizer")
             nlp.add_pipe(sentencizer)
