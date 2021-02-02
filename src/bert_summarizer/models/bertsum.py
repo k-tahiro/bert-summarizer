@@ -44,12 +44,8 @@ class BertSumExt(BertPreTrainedModel):
             config.encoder.num_hidden_layers,
             nn.LayerNorm(config.hidden_size, eps=config.encoder.layer_norm_eps)
         )
-        self.classifier = nn.Sequential(
-            nn.Linear(config.hidden_size, 1, bias=True),
-            nn.Sigmoid()
-        )
-
-        self.loss = nn.BCELoss(reduction='none')
+        self.classifier = nn.Linear(config.hidden_size, 1, bias=True)
+        self.loss = nn.BCEWithLogitsLoss(reduction='none')
 
         if config.encoder.initializer_range != 0.0:
             for p in self.encoder.layers.parameters():
