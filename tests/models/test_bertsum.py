@@ -34,8 +34,8 @@ class TestBertSumExt:
         assert encoder_layer.linear1.in_features == config.hidden_size
         assert encoder_layer.linear1.out_features == config.encoder.intermediate_size
 
-        assert model.classifier[0].in_features == config.hidden_size
-        assert model.classifier[0].out_features == 1
+        assert model.classifier.in_features == config.hidden_size
+        assert model.classifier.out_features == 1
 
     @skip_on_ga
     @pytest.mark.parametrize('cls_mask,labels,return_dict,expected_len', [
