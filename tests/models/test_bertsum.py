@@ -34,8 +34,8 @@ class TestBertSumExt:
         assert encoder_layer.linear1.in_features == config.hidden_size
         assert encoder_layer.linear1.out_features == config.encoder.intermediate_size
 
-        assert model.classifier[0].in_features == config.hidden_size
-        assert model.classifier[0].out_features == 1
+        assert model.classifier.in_features == config.hidden_size
+        assert model.classifier.out_features == 1
 
     @skip_on_ga
     @pytest.mark.parametrize('cls_mask,labels,return_dict,expected_len', [
@@ -202,9 +202,9 @@ class TestBertSumAbsDecoder:
 
     @skip_on_ga
     @pytest.mark.parametrize('labels,return_dict,expected_len', [
-        (None, None, 3),
+        (None, None, 5),
         (None, True, 2),
-        (True, None, 4),
+        (True, None, 6),
         (True, True, 3),
     ])
     def test_forward(self, config, model, labels, return_dict, expected_len):
@@ -234,7 +234,7 @@ class TestBertSumAbsDecoder:
             logits = outputs.logits
         else:
             if labels:
-                loss, logits, _, _ = outputs
+                loss, logits, _, _, _, _ = outputs
             else:
                 logits = outputs[0]
 
@@ -261,19 +261,31 @@ class TestBertSumAbs:
                 == model.decoder.get_input_embeddings().weight).all()
 
     @pytest.mark.parametrize('input_ids,kwargs,expected_update', [
-        ([0, 1, 2], dict(), dict()),
+        (torch.tensor([0, 1, 2]), dict(), dict()),
         (
-            [0, 1, 2],
-            dict(decoder_encoder_input_ids=[0, 1, 2]),
-            dict(decoder_encoder_input_ids=[0, 1, 2])
+            torch.tensor([0, 1, 2]),
+            dict(decoder_encoder_input_ids=torch.tensor([0, 1, 2])),
+            dict(decoder_encoder_input_ids=torch.tensor([0, 1, 2]))
         ),
-        ([0, 1, 2], dict(invalid_arg=[0, 1, 2]), dict()),
+        (
+            torch.tensor([0, 1, 2]),
+            dict(invalid_arg=torch.tensor([0, 1, 2])),
+            dict()
+        ),
     ])
     def test_prepare_inputs_for_generation(self, model, input_ids, kwargs, expected_update):
-        input_dict = super(
+        expected = super(
             BertSumAbs, model
         ).prepare_inputs_for_generation(input_ids, **kwargs)
-        input_dict.update(expected_update)
+        expected.update(expected_update)
 
-        assert model.prepare_inputs_for_generation(input_ids, **kwargs) \
-            == input_dict
+        input_dict = model.prepare_inputs_for_generation(input_ids, **kwargs)
+
+        assert input_dict.keys() == expected.keys()
+        for k in input_dict:
+            a = input_dict[k]
+            b = expected[k]
+            if a is None:
+                assert a is b is None
+            else:
+                assert torch.all(a.eq(b))
