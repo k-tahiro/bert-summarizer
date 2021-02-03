@@ -202,9 +202,9 @@ class TestBertSumAbsDecoder:
 
     @skip_on_ga
     @pytest.mark.parametrize('labels,return_dict,expected_len', [
-        (None, None, 3),
+        (None, None, 5),
         (None, True, 2),
-        (True, None, 4),
+        (True, None, 6),
         (True, True, 3),
     ])
     def test_forward(self, config, model, labels, return_dict, expected_len):
@@ -234,7 +234,7 @@ class TestBertSumAbsDecoder:
             logits = outputs.logits
         else:
             if labels:
-                loss, logits, _, _ = outputs
+                loss, logits, _, _, _, _ = outputs
             else:
                 logits = outputs[0]
 
