@@ -14,7 +14,7 @@ from transformers import (
     BertLMHeadModel,
     EncoderDecoderModel
 )
-from transformers.modeling_bert import (
+from transformers.models.bert.modeling_bert import (
     BertEncoder,
     BertPooler,
     BertOnlyMLMHead
@@ -106,11 +106,11 @@ class BertSumExt(BertPreTrainedModel):
         )
 
 
-class BertSumAbsDecoder(BertPreTrainedModel):
+class BertSumAbsDecoder(BertLMHeadModel):
     # TODO: Replace with transformers decoder.
     # TODO: Control decoder and loss function arguments
     def __init__(self, config: BertConfig):
-        super().__init__(config)
+        super(BertPreTrainedModel, self).__init__(config)
 
         self.decoder = TransformerDecoder(
             config.num_hidden_layers,
@@ -222,12 +222,13 @@ class BertSumAbsDecoder(BertPreTrainedModel):
             lm_loss = self.loss(output, target).div(float(normalization))
 
         if not return_dict:
-            output = (prediction_scores, None, None)
+            output = (prediction_scores, None, None, attns['std'], None)
             return ((lm_loss,) + output) if lm_loss is not None else output
 
         return CausalLMOutputWithCrossAttentions(
             loss=lm_loss,
             logits=prediction_scores,
+            past_key_values=None,
             hidden_states=None,
             attentions=None,
             cross_attentions=attns['std'],
