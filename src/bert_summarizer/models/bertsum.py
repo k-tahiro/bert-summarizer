@@ -14,7 +14,7 @@ from transformers import (
     BertLMHeadModel,
     EncoderDecoderModel
 )
-from transformers.modeling_bert import (
+from transformers.models.bert.modeling_bert import (
     BertEncoder,
     BertPooler,
     BertOnlyMLMHead
