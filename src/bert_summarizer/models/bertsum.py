@@ -106,11 +106,11 @@ class BertSumExt(BertPreTrainedModel):
         )
 
 
-class BertSumAbsDecoder(BertPreTrainedModel):
+class BertSumAbsDecoder(BertLMHeadModel):
     # TODO: Replace with transformers decoder.
     # TODO: Control decoder and loss function arguments
     def __init__(self, config: BertConfig):
-        super().__init__(config)
+        super(BertPreTrainedModel, self).__init__(config)
 
         self.decoder = TransformerDecoder(
             config.num_hidden_layers,
