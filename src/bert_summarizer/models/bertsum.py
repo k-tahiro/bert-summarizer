@@ -196,7 +196,7 @@ class BertSumAbsDecoder(BertLMHeadModel):
             lm_loss = self.loss(output, target).div(float(normalization))
 
         if not return_dict:
-            output = (prediction_scores, None, None, attns['std'], None)
+            output = (prediction_scores, None, None, None, None)
             return ((lm_loss,) + output) if lm_loss is not None else output
 
         return CausalLMOutputWithCrossAttentions(
