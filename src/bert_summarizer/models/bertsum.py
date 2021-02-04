@@ -1,7 +1,6 @@
 from logging import getLogger
 from typing import Dict, List, Optional
 
-from onmt.utils.loss import LabelSmoothingLoss
 import torch
 from torch import nn
 from torch.nn.init import xavier_uniform_
@@ -20,6 +19,7 @@ from transformers.models.bert.modeling_bert import (
 from transformers.modeling_outputs import CausalLMOutputWithCrossAttentions, SequenceClassifierOutput
 
 from .embeddings import PositionalEncoding
+from .loss import LabelSmoothingLoss
 from ..config import BertSumExtConfig, BertSumAbsConfig
 
 logger = getLogger(__name__)
@@ -135,9 +135,8 @@ class BertSumAbsDecoder(BertLMHeadModel):
         )
 
         self.loss = LabelSmoothingLoss(
-            0.1,
             config.vocab_size,
-            ignore_index=config.pad_token_id
+            0.1
         )
 
         self.init_weights()
