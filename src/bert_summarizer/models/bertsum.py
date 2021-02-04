@@ -11,11 +11,6 @@ from transformers import (
     BertLMHeadModel,
     EncoderDecoderModel
 )
-from transformers.models.bert.modeling_bert import (
-    BertEncoder,
-    BertPooler,
-    BertOnlyMLMHead
-)
 from transformers.modeling_outputs import CausalLMOutputWithCrossAttentions, SequenceClassifierOutput
 
 from .embeddings import PositionalEncoding
