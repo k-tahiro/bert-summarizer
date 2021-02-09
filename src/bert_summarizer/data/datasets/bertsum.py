@@ -181,13 +181,13 @@ class BertSumExtDataset(BertSumDataset):
         eos_token_id = tokenizer.sep_token_id
         self.gs = GreedySelector(tokenizer)
 
-        generate_tgt = isinstance(self.tgt[0], str)
         for data in self.data:
             data['cls_mask'] = [
                 1 * (id_ == bos_token_id)
                 for id_ in data['input_ids']
             ]
 
+        generate_tgt = isinstance(self.tgt[0], str)
         valid_data = []
         valid_sentences = []
         valid_tgt = []
