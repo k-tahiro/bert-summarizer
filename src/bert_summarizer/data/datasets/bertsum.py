@@ -182,6 +182,11 @@ class BertSumExtDataset(BertSumDataset):
         self.gs = GreedySelector(tokenizer)
 
         generate_tgt = isinstance(self.tgt[0], str)
+        for data in self.data:
+            data['cls_mask'] = [
+                1 * (id_ == bos_token_id)
+                for id_ in data['input_ids']
+            ]
 
         valid_data = []
         valid_sentences = []
@@ -197,11 +202,6 @@ class BertSumExtDataset(BertSumDataset):
                     for text in sents_tgt
                     for sent in self._sentencize(text)
                 ]  # to support multiple sentences in one sentence
-
-            data['cls_mask'] = [
-                1 * (id_ == bos_token_id)
-                for id_ in data['input_ids']
-            ]
 
             data['label'] = []
             index = 0
