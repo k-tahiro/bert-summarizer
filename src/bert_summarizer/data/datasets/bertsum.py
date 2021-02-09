@@ -173,9 +173,6 @@ class BertSumExtDataset(BertSumDataset):
     ):
         super().__init__(model_name, src, tgt)
 
-        if self.tgt is None:
-            return
-
         tokenizer = self.tokenizer
         bos_token_id = tokenizer.cls_token_id
         eos_token_id = tokenizer.sep_token_id
@@ -186,6 +183,9 @@ class BertSumExtDataset(BertSumDataset):
                 1 * (id_ == bos_token_id)
                 for id_ in data['input_ids']
             ]
+
+        if self.tgt is None:
+            return
 
         generate_tgt = isinstance(self.tgt[0], str)
         valid_data = []
