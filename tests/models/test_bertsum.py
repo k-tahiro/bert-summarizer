@@ -235,15 +235,19 @@ class TestBertSumAbs:
         return BertSumAbs(config)
 
     def test_embeddings_weight(self, model):
-        enc_embeddings_weight = model.encoder.get_input_embeddings().weight
-        dec_embeddings_weight = model.decoder.get_input_embeddings().weight
+        enc_input_embeddings_weight = model.encoder.get_input_embeddings().weight
+        dec_input_embeddings_weight = model.decoder.get_input_embeddings().weight
+        dec_output_embeddings_weight = model.decoder.get_output_embeddings().weight
 
-        enc_num_tokens = enc_embeddings_weight.size(0)
-        dec_num_tokens = dec_embeddings_weight.size(0)
+        enc_num_tokens = enc_input_embeddings_weight.size(0)
+        dec_num_tokens = dec_input_embeddings_weight.size(0)
         num_shared_tokens = min(enc_num_tokens, dec_num_tokens)
 
-        assert (enc_embeddings_weight[:num_shared_tokens, :] ==
-                dec_embeddings_weight[:num_shared_tokens, :]).all()
+        assert (enc_input_embeddings_weight[:num_shared_tokens, :] ==
+                dec_input_embeddings_weight[:num_shared_tokens, :]).all()
+
+        assert id(dec_input_embeddings_weight) \
+            == id(dec_output_embeddings_weight)
 
     @pytest.mark.parametrize('input_ids,kwargs,expected_update', [
         (torch.tensor([0, 1, 2]), dict(), dict()),
