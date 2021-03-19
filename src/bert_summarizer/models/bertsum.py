@@ -1,9 +1,6 @@
 from logging import getLogger
 from typing import Dict, List, Optional
 
-from onmt.decoders import TransformerDecoder
-from onmt.modules import Embeddings
-from onmt.utils.loss import LabelSmoothingLoss
 import torch
 from torch import nn
 from torch.nn.init import xavier_uniform_
@@ -14,13 +11,10 @@ from transformers import (
     BertLMHeadModel,
     EncoderDecoderModel
 )
-from transformers.models.bert.modeling_bert import (
-    BertEncoder,
-    BertPooler,
-    BertOnlyMLMHead
-)
 from transformers.modeling_outputs import CausalLMOutputWithCrossAttentions, SequenceClassifierOutput
 
+from .embeddings import PositionalEncoding
+from .loss import LabelSmoothingLoss
 from ..config import BertSumExtConfig, BertSumAbsConfig
 
 logger = getLogger(__name__)
@@ -108,61 +102,45 @@ class BertSumAbsDecoder(BertLMHeadModel):
     def __init__(self, config: BertConfig):
         super(BertPreTrainedModel, self).__init__(config)
 
-        self.decoder = TransformerDecoder(
-            config.num_hidden_layers,
-            config.hidden_size,
-            config.num_attention_heads,
-            config.intermediate_size,
-            False,
-            'scaled-dot',
-            config.hidden_dropout_prob,
-            config.attention_probs_dropout_prob,
-            Embeddings(
-                config.hidden_size,
+        self.embeddings = nn.Sequential(
+            nn.Embedding(
                 config.vocab_size,
-                config.pad_token_id,
-                position_encoding=True
+                config.hidden_size,
+                padding_idx=config.pad_token_id,
             ),
-            0,
-            False,
-            False,
-            0,
-            0
+            PositionalEncoding(
+                config.hidden_size,
+                dropout=config.hidden_dropout_prob
+            )
         )
-
+        self.decoder = nn.TransformerDecoder(
+            nn.TransformerDecoderLayer(
+                config.hidden_size,
+                config.num_attention_heads,
+                dim_feedforward=config.intermediate_size,
+                dropout=config.attention_probs_dropout_prob,
+                activation=config.hidden_act,
+            ),
+            config.num_hidden_layers,
+            nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
+        )
         self.generator = nn.Sequential(
             nn.Linear(config.hidden_size, config.vocab_size),
             nn.LogSoftmax(dim=-1)
         )
 
-        for module in self.decoder.modules():
-            if isinstance(module, (nn.Linear, nn.Embedding)):
-                module.weight.data.normal_(mean=0.0, std=0.02)
-            elif isinstance(module, nn.LayerNorm):
-                module.bias.data.zero_()
-                module.weight.data.fill_(1.0)
-            if isinstance(module, nn.Linear) and module.bias is not None:
-                module.bias.data.zero_()
-        for p in self.generator.parameters():
-            if p.dim() > 1:
-                xavier_uniform_(p)
-            else:
-                p.data.zero_()
-        self.generator[0].bias.requires_grad = False
-
         self.loss = LabelSmoothingLoss(
-            0.1,
             config.vocab_size,
-            ignore_index=config.pad_token_id
+            0.1
         )
 
-        self.tie_weights()
+        self.init_weights()
 
     def get_input_embeddings(self) -> nn.Module:
-        return self.decoder.embeddings.make_embedding.emb_luts[0]
+        return self.embeddings[0]
 
     def set_input_embeddings(self, embeddings: nn.Embedding):
-        self.decoder.embeddings.make_embedding.emb_luts[0] = embeddings
+        self.embeddings[0] = embeddings
 
     def get_output_embeddings(self) -> nn.Module:
         return self.generator[0]
@@ -183,22 +161,20 @@ class BertSumAbsDecoder(BertLMHeadModel):
         return_dict=None,
         **kwargs
     ):
-        logger.debug(f'kwargs={kwargs}')
+        tgt = self.embeddings(input_ids).transpose(0, 1)
+        memory = encoder_hidden_states.transpose(0, 1)
+        tgt_key_padding_mask = attention_mask ^ True
+        memory_key_padding_mask = encoder_attention_mask ^ True
 
-        # Use OpenNMT-py TransformerDecoder
-        src = kwargs['encoder_input_ids'].unsqueeze(-1).transpose(0, 1)
-        tgt = input_ids.unsqueeze(-1).transpose(0, 1)
-        memory_bank = enc_hidden = encoder_hidden_states.transpose(0, 1)
-
-        self.decoder.init_state(src, memory_bank, enc_hidden)
-        dec_outs, attns = self.decoder(
+        output = self.decoder(
             tgt,
-            memory_bank,
-            memory_lengths=encoder_attention_mask.sum(axis=1)
+            memory,
+            tgt_key_padding_mask=tgt_key_padding_mask,
+            memory_key_padding_mask=memory_key_padding_mask
         )
 
         # transformers style loss calculation
-        decoder_outputs = dec_outs.transpose(0, 1)
+        decoder_outputs = output.transpose(0, 1)
         prediction_scores = self.generator[0](decoder_outputs)
 
         lm_loss = None
@@ -218,7 +194,7 @@ class BertSumAbsDecoder(BertLMHeadModel):
             lm_loss = self.loss(output, target).div(float(normalization))
 
         if not return_dict:
-            output = (prediction_scores, None, None, attns['std'], None)
+            output = (prediction_scores, None, None, None, None)
             return ((lm_loss,) + output) if lm_loss is not None else output
 
         return CausalLMOutputWithCrossAttentions(
@@ -227,7 +203,7 @@ class BertSumAbsDecoder(BertLMHeadModel):
             past_key_values=None,
             hidden_states=None,
             attentions=None,
-            cross_attentions=attns['std'],
+            cross_attentions=None,
         )
 
 
@@ -252,28 +228,9 @@ class BertSumAbs(EncoderDecoderModel):
 
         logger.debug(f'self.config={self.config}')
 
-        enc_emb_weight = self.encoder.get_input_embeddings().weight.clone().detach()
-        dec_emb_weight = self.decoder.get_input_embeddings().weight.clone().detach()
-        enc_row, enc_col = enc_emb_weight.size()
-        dec_emb_weight[:enc_row, :enc_col] = enc_emb_weight
-        input_embeddings = nn.Embedding.from_pretrained(
-            dec_emb_weight,
-            freeze=False,
-            padding_idx=self.config.decoder.pad_token_id
+        decoder_embeddings = self.encoder._get_resized_embeddings(
+            self.encoder.get_input_embeddings(),
+            self.config.decoder.vocab_size
         )
-        self.decoder.set_input_embeddings(input_embeddings)
+        self.decoder.set_input_embeddings(decoder_embeddings)
         self.decoder.tie_weights()
-
-    def prepare_inputs_for_generation(self, input_ids, past=None, attention_mask=None, encoder_outputs=None, **kwargs):
-        input_dict = super().prepare_inputs_for_generation(
-            input_ids,
-            past,
-            attention_mask,
-            encoder_outputs,
-            **kwargs
-        )
-
-        if 'decoder_encoder_input_ids' in kwargs:
-            input_dict['decoder_encoder_input_ids'] = kwargs['decoder_encoder_input_ids']
-
-        return input_dict
