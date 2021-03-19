@@ -47,12 +47,6 @@ class TestEncoderDecoderDataCollatorWithPadding:
                 [0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0],
             ]),
-            'decoder_encoder_input_ids': torch.tensor([
-                [101, 2023, 2003, 1996, 2034, 3793, 2005, 5604, 1012,
-                    102, 101, 2023, 3793, 3397, 2048, 11746, 1012, 102],
-                [101, 2023, 2003, 1996, 2117, 3793, 2005, 5604, 1012,
-                    102, 101, 2023, 3793, 3397, 2048, 11746, 1012, 102],
-            ]),
         }
 
     def test_call(self, data_collator, encoded_data_abs, expected_batch):
