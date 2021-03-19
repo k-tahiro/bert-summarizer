@@ -228,7 +228,7 @@ class TestBertSumAbsDecoder:
 class TestBertSumAbs:
     @pytest.fixture
     def config(self):
-        return BertSumAbsConfig()
+        return BertSumAbsConfig(vocab_size=32003)
 
     @pytest.fixture
     def model(self, config):
