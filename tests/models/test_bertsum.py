@@ -166,9 +166,9 @@ class TestBertSumAbsDecoder:
     @skip_on_ga
     @pytest.mark.parametrize('labels,return_dict,expected_len', [
         (None, None, 5),
-        (None, True, 2),
+        (None, True, 1),
         (True, None, 6),
-        (True, True, 3),
+        (True, True, 2),
     ])
     def test_forward(self, config, model, labels, return_dict, expected_len):
         batch_size = 32
