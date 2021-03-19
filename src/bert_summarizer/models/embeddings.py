@@ -7,7 +7,7 @@ from torch import nn
 class PositionalEncoding(nn.Module):
     """https://pytorch.org/tutorials/beginner/transformer_tutorial.html"""
 
-    def __init__(self, d_model, dropout=0.1, max_len=5000):
+    def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 5000):
         super(PositionalEncoding, self).__init__()
         self.dropout = nn.Dropout(p=dropout)
 
@@ -20,6 +20,6 @@ class PositionalEncoding(nn.Module):
         pe = pe.unsqueeze(0).transpose(0, 1)
         self.register_buffer('pe', pe)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = x + self.pe[:x.size(0), :]
         return self.dropout(x)
