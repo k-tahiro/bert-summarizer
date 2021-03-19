@@ -248,33 +248,3 @@ class TestBertSumAbs:
 
         assert id(dec_input_embeddings_weight) \
             == id(dec_output_embeddings_weight)
-
-    @pytest.mark.parametrize('input_ids,kwargs,expected_update', [
-        (torch.tensor([0, 1, 2]), dict(), dict()),
-        (
-            torch.tensor([0, 1, 2]),
-            dict(decoder_encoder_input_ids=torch.tensor([0, 1, 2])),
-            dict(decoder_encoder_input_ids=torch.tensor([0, 1, 2]))
-        ),
-        (
-            torch.tensor([0, 1, 2]),
-            dict(invalid_arg=torch.tensor([0, 1, 2])),
-            dict()
-        ),
-    ])
-    def test_prepare_inputs_for_generation(self, model, input_ids, kwargs, expected_update):
-        expected = super(
-            BertSumAbs, model
-        ).prepare_inputs_for_generation(input_ids, **kwargs)
-        expected.update(expected_update)
-
-        input_dict = model.prepare_inputs_for_generation(input_ids, **kwargs)
-
-        assert input_dict.keys() == expected.keys()
-        for k in input_dict:
-            a = input_dict[k]
-            b = expected[k]
-            if a is None:
-                assert a is b is None
-            else:
-                assert torch.all(a.eq(b))
