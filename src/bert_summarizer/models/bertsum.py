@@ -161,8 +161,6 @@ class BertSumAbsDecoder(BertLMHeadModel):
         return_dict=None,
         **kwargs
     ):
-        logger.debug(f'kwargs={kwargs}')
-
         tgt = self.embeddings(input_ids).transpose(0, 1)
         memory = encoder_hidden_states.transpose(0, 1)
         tgt_key_padding_mask = attention_mask ^ True
