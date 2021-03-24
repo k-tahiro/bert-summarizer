@@ -1,7 +1,6 @@
 from logging import getLogger
 from typing import Dict, List, Optional
 
-import numpy as np
 import torch
 from torch import nn
 from torch.nn.init import xavier_uniform_
@@ -164,12 +163,11 @@ class BertSumAbsDecoder(BertLMHeadModel):
     ):
         tgt = self.embeddings(input_ids).transpose(0, 1)
         memory = encoder_hidden_states.transpose(0, 1)
-        tgt_mask = torch.from_numpy(
-            np.triu(
-                np.ones((tgt.size(0), tgt.size(0))),
-                k=1
-            ).astype(bool)
-        )
+        tgt_mask = torch.ones(
+            (tgt.size(0), tgt.size(0)),
+            dtype=torch.bool,
+            device=tgt.device,
+        ).triu_(1)
         tgt_key_padding_mask = attention_mask ^ True
         memory_key_padding_mask = encoder_attention_mask ^ True
 
