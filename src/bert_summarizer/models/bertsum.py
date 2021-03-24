@@ -1,6 +1,7 @@
 from logging import getLogger
 from typing import Dict, List, Optional
 
+import numpy as np
 import torch
 from torch import nn
 from torch.nn.init import xavier_uniform_
