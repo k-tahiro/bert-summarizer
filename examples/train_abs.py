@@ -43,7 +43,7 @@ def create_model(dataset: BertSumAbsDataset) -> BertSumAbs:
 def main():
     basicConfig(level='INFO')
 
-    dataset = create_dataset(n=10)
+    dataset = create_dataset(n=1000)
     tokenizer = dataset.tgt_tokenizer
 
     model = create_model(dataset)
