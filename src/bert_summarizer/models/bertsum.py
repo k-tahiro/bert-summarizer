@@ -163,12 +163,18 @@ class BertSumAbsDecoder(BertLMHeadModel):
     ):
         tgt = self.embeddings(input_ids).transpose(0, 1)
         memory = encoder_hidden_states.transpose(0, 1)
+        tgt_mask = torch.ones(
+            (tgt.size(0), tgt.size(0)),
+            dtype=torch.bool,
+            device=tgt.device,
+        ).triu_(1)
         tgt_key_padding_mask = attention_mask ^ True
         memory_key_padding_mask = encoder_attention_mask ^ True
 
         output = self.decoder(
             tgt,
             memory,
+            tgt_mask=tgt_mask,
             tgt_key_padding_mask=tgt_key_padding_mask,
             memory_key_padding_mask=memory_key_padding_mask
         )
@@ -229,7 +235,11 @@ class BertSumAbs(EncoderDecoderModel):
         logger.debug(f'self.config={self.config}')
 
         decoder_embeddings = self.encoder._get_resized_embeddings(
-            self.encoder.get_input_embeddings(),
+            nn.Embedding.from_pretrained(
+                self.encoder.get_input_embeddings().weight,
+                freeze=False,
+                padding_idx=self.config.encoder.pad_token_id
+            ),
             self.config.decoder.vocab_size
         )
         self.decoder.set_input_embeddings(decoder_embeddings)
