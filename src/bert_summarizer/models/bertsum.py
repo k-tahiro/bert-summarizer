@@ -235,7 +235,11 @@ class BertSumAbs(EncoderDecoderModel):
         logger.debug(f'self.config={self.config}')
 
         decoder_embeddings = self.encoder._get_resized_embeddings(
-            self.encoder.get_input_embeddings().detach().clone(),
+            nn.Embedding.from_pretrained(
+                self.encoder.get_input_embeddings().weight,
+                freeze=False,
+                padding_idx=self.config.encoder.pad_token_id
+            ),
             self.config.decoder.vocab_size
         )
         self.decoder.set_input_embeddings(decoder_embeddings)
