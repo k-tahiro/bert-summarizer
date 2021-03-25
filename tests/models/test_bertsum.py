@@ -122,7 +122,7 @@ class TestBertSumExt:
 class TestBertSumAbsDecoder:
     @pytest.fixture
     def config(self):
-        return BertSumAbsConfig().decoder
+        return BertSumAbsConfig(smoothing=0.1).decoder
 
     @pytest.fixture
     def model(self, config):
@@ -162,6 +162,10 @@ class TestBertSumAbsDecoder:
 
         assert model.generator[0].in_features == config.hidden_size
         assert model.generator[0].out_features == config.vocab_size
+
+    def test_loss(self, config, model):
+        assert model.loss.cls == config.vocab_size
+        assert model.loss.smoothing == config.smoothing
 
     @skip_on_ga
     @pytest.mark.parametrize('labels,return_dict,expected_len', [
