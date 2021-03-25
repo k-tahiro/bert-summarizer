@@ -33,6 +33,7 @@ def default_decoder_config_dict():
     config = AutoConfig.from_pretrained('bert-base-uncased').to_dict()
     config['is_decoder'] = True
     config['add_cross_attention'] = True
+    config['smoothing'] = 0.0
     return config
 
 
@@ -75,6 +76,7 @@ class TestBertSumAbsConfig:
             hidden_dropout_prob=0.2,
             attention_probs_dropout_prob=0.2,
             layer_norm_eps=1e-6,
+            smoothing=0.1,
         ),
     ])
     def test_custom_config(self, kwargs):
