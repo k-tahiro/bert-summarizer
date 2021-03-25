@@ -76,6 +76,7 @@ class TestBertSumAbsConfig:
             hidden_dropout_prob=0.2,
             attention_probs_dropout_prob=0.2,
             layer_norm_eps=1e-6,
+            smoothing=0.1,
         ),
     ])
     def test_custom_config(self, kwargs):
