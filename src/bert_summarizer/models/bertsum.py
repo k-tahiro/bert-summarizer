@@ -185,12 +185,12 @@ class BertSumAbsDecoder(BertLMHeadModel):
                 .contiguous()
             labels = labels[:, 1:].contiguous()
 
-            output = shifted_prediction_scores.view(-1, self.config.vocab_size)
+            pred = shifted_prediction_scores.view(-1, self.config.vocab_size)
             target = labels.view(-1)
 
             normalization = target.ne(self.config.pad_token_id).sum().item()
 
-            lm_loss = self.loss(output, target).div(float(normalization))
+            lm_loss = self.loss(pred, target).div(float(normalization))
 
         if not return_dict:
             output = (prediction_scores, None, None, None, None)
