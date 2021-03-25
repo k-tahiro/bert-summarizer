@@ -51,6 +51,7 @@ class BertSumAbsConfig(EncoderDecoderConfig):
     def __init__(
         self,
         encoder_model_name_or_path: str = 'bert-base-uncased',
+        smoothing: float = 0.0,
         **kwargs
     ):
         if 'encoder' in kwargs:
@@ -66,6 +67,7 @@ class BertSumAbsConfig(EncoderDecoderConfig):
             decoder_config.update(kwargs)
         decoder_config['is_decoder'] = True
         decoder_config['add_cross_attention'] = True
+        decoder_config['smoothing'] = smoothing
 
         logger.info(f'encoder_config={encoder_config}')
         logger.info(f'decoder_config={decoder_config}')

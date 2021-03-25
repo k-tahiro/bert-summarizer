@@ -97,8 +97,6 @@ class BertSumExt(BertPreTrainedModel):
 
 
 class BertSumAbsDecoder(BertLMHeadModel):
-    # TODO: Replace with transformers decoder.
-    # TODO: Control decoder and loss function arguments
     def __init__(self, config: BertConfig):
         super(BertPreTrainedModel, self).__init__(config)
 
@@ -131,7 +129,7 @@ class BertSumAbsDecoder(BertLMHeadModel):
 
         self.loss = LabelSmoothingLoss(
             config.vocab_size,
-            0.1
+            config.smoothing
         )
 
         self.init_weights()

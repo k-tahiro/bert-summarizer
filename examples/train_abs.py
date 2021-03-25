@@ -28,6 +28,7 @@ def create_dataset(model_name: str = 'bert-base-uncased', n: int = 1000) -> Bert
 def create_model(dataset: BertSumAbsDataset) -> BertSumAbs:
     config = BertSumAbsConfig(
         dataset.model_name,
+        smoothing=0.1,
         vocab_size=dataset.vocab_size,
         num_hidden_layers=6,
         num_attention_heads=8,
