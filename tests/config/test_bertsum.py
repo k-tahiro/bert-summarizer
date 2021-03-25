@@ -33,6 +33,7 @@ def default_decoder_config_dict():
     config = AutoConfig.from_pretrained('bert-base-uncased').to_dict()
     config['is_decoder'] = True
     config['add_cross_attention'] = True
+    config['smoothing'] = 0.0
     return config
 
 
