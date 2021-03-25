@@ -122,10 +122,7 @@ class BertSumAbsDecoder(BertLMHeadModel):
             config.num_hidden_layers,
             nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         )
-        self.generator = nn.Sequential(
-            nn.Linear(config.hidden_size, config.vocab_size),
-            nn.LogSoftmax(dim=-1)
-        )
+        self.generator = nn.Linear(config.hidden_size, config.vocab_size)
 
         self.loss = LabelSmoothingLoss(
             config.vocab_size,
@@ -141,7 +138,7 @@ class BertSumAbsDecoder(BertLMHeadModel):
         self.embeddings[0] = embeddings
 
     def get_output_embeddings(self) -> nn.Module:
-        return self.generator[0]
+        return self.generator
 
     def forward(
         self,
@@ -179,7 +176,7 @@ class BertSumAbsDecoder(BertLMHeadModel):
 
         # transformers style loss calculation
         decoder_outputs = output.transpose(0, 1)
-        prediction_scores = self.generator[0](decoder_outputs)
+        prediction_scores = self.generator(decoder_outputs)
 
         lm_loss = None
         if labels is not None:
@@ -188,14 +185,13 @@ class BertSumAbsDecoder(BertLMHeadModel):
                 .contiguous()
             labels = labels[:, 1:].contiguous()
 
-            output = self.generator[1](
-                shifted_prediction_scores
-            ).view(-1, self.config.vocab_size)
+            pred = shifted_prediction_scores.view(-1, self.config.vocab_size)
             target = labels.view(-1)
 
-            normalization = target.ne(self.config.pad_token_id).sum().item()
-
-            lm_loss = self.loss(output, target).div(float(normalization))
+            valid_positions = target.ne(self.config.pad_token_id)
+            pred = pred[valid_positions]
+            target = target[valid_positions]
+            lm_loss = self.loss(pred, target)
 
         if not return_dict:
             output = (prediction_scores, None, None, None, None)
