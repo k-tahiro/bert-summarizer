@@ -57,8 +57,8 @@ class DataCollatorWithPaddingWithAdditionalFeatures(DataCollatorWithPadding):
 class EncoderDecoderDataCollatorWithPadding(DataCollatorWithPadding):
     decoder_tokenizer: Optional[Union[PreTrainedTokenizer,
                                       PreTrainedTokenizerFast]] = None
-    return_decoder: bool = False
-    return_labels: bool = False
+    return_decoder: bool = True
+    return_labels: bool = True
 
     def __post_init__(self):
         if self.decoder_tokenizer is None:
