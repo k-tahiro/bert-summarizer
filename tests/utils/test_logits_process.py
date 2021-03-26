@@ -31,4 +31,19 @@ class TestNGramPrefixAllowedTokensFn:
 
 
 class TestGlobalDistributionLogitsProcessor:
-    pass
+    @pytest.fixture
+    def logits_processor(self):
+        return GlobalDistributionLogitsProcessor(
+            torch.ones(2) / 2,
+            0.5,
+        )
+
+    @pytest.mark.parametrize('input_ids, scores, expected', [
+        (
+            torch.ones(2, 2, dtype=torch.int),
+            torch.tensor([[0.1, 0.9], [0.4, 0.6]]),
+            torch.tensor([[0.3, 0.7], [0.45, 0.55]])
+        ),
+    ])
+    def test_call(self, logits_processor, input_ids, scores, expected):
+        assert (logits_processor(input_ids, scores) == expected).all()
