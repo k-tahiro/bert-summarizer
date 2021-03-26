@@ -23,7 +23,8 @@ class NGramPrefixAllowedTokensFn(PrefixAllowedTokensFnBase):
             if self.match(ngram, inputs_ids)
         ] or self.all_tokens
 
-    def match(self, ngram: List[int], inputs_ids: torch.Tensor) -> bool:
+    @staticmethod
+    def match(ngram: List[int], inputs_ids: torch.Tensor) -> bool:
         prefix = ngram[:-1]
         actual = inputs_ids[-len(prefix):].tolist()
         return actual == prefix
