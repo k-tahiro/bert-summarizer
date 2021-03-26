@@ -57,11 +57,25 @@ class DataCollatorWithPaddingWithAdditionalFeatures(DataCollatorWithPadding):
 class EncoderDecoderDataCollatorWithPadding(DataCollatorWithPadding):
     decoder_tokenizer: Optional[Union[PreTrainedTokenizer,
                                       PreTrainedTokenizerFast]] = None
-    generate_labels: bool = False
+    return_decoder: bool = True
+    return_labels: bool = True
 
     def __post_init__(self):
         if self.decoder_tokenizer is None:
             self.decoder_tokenizer = self.tokenizer
+
+        if self.return_labels:
+            self.return_decoder = True
+
+    def train(self) -> 'EncoderDecoderDataCollatorWithPadding':
+        self.return_decoder = True
+        self.return_labels = True
+        return self
+
+    def eval(self) -> 'EncoderDecoderDataCollatorWithPadding':
+        self.return_decoder = False
+        self.return_labels = False
+        return self
 
     def __call__(self, features: List[Dict[str, Union[List[int], torch.Tensor]]]) -> Dict[str, torch.Tensor]:
         encoder_features = []
@@ -97,12 +111,14 @@ class EncoderDecoderDataCollatorWithPadding(DataCollatorWithPadding):
             decoder_batch = dict()
 
         batch = encoder_batch
-        batch.update(dict(
-            (f'decoder_{k}', v)
-            for k, v in decoder_batch.items()
-        ))
 
-        if self.generate_labels:
+        if self.return_decoder:
+            batch.update(dict(
+                (f'decoder_{k}', v)
+                for k, v in decoder_batch.items()
+            ))
+
+        if self.return_labels:
             batch['labels'] = batch['decoder_input_ids']
 
         return batch
