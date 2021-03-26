@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List
 
 import torch
-from transformers import LogitsProccessor
+from transformers import LogitsProcessor
 
 
 class PrefixAllowedTokensFnBase(ABC):
@@ -29,7 +29,7 @@ class NGramPrefixAllowedTokensFn(PrefixAllowedTokensFnBase):
         return actual == prefix
 
 
-class GlobalDistributionLogitsProcessor(LogitsProccessor):
+class GlobalDistributionLogitsProcessor(LogitsProcessor):
     def __init__(self, distribution: torch.FloatTensor, lambda_: float):
         self.distribution = distribution
         self.lambda_ = lambda_
