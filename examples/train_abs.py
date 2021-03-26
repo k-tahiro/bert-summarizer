@@ -50,14 +50,14 @@ def main():
     model = create_model(dataset)
 
     args = TrainingArguments('BertSumAbs')
+    data_collator = EncoderDecoderDataCollatorWithPadding(
+        dataset.tokenizer,
+        decoder_tokenizer=tokenizer,
+    )
     trainer = EncoderDecoderTrainer(
         model,
         args,
-        data_collator=EncoderDecoderDataCollatorWithPadding(
-            dataset.tokenizer,
-            decoder_tokenizer=tokenizer,
-            generate_labels=True
-        ),
+        data_collator=data_collator,
         train_dataset=dataset
     )
     trainer.train()
@@ -65,11 +65,7 @@ def main():
     data = next(iter(DataLoader(
         dataset,
         batch_size=1,
-        collate_fn=EncoderDecoderDataCollatorWithPadding(
-            dataset.tokenizer,
-            decoder_tokenizer=tokenizer,
-            generate_labels=False
-        )
+        collate_fn=data_collator.eval()
     )))
     outputs = model.generate(
         **data,
