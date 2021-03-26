@@ -67,6 +67,16 @@ class EncoderDecoderDataCollatorWithPadding(DataCollatorWithPadding):
         if self.return_labels:
             self.return_decoder = True
 
+    def train(self) -> 'EncoderDecoderDataCollatorWithPadding':
+        self.return_decoder = True
+        self.return_labels = True
+        return self
+
+    def eval(self) -> 'EncoderDecoderDataCollatorWithPadding':
+        self.return_decoder = False
+        self.return_labels = False
+        return self
+
     def __call__(self, features: List[Dict[str, Union[List[int], torch.Tensor]]]) -> Dict[str, torch.Tensor]:
         encoder_features = []
         decoder_features = []
