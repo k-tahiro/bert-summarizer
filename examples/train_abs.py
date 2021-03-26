@@ -56,7 +56,7 @@ def main():
         data_collator=EncoderDecoderDataCollatorWithPadding(
             dataset.tokenizer,
             decoder_tokenizer=tokenizer,
-            generate_labels=True
+            return_labels=True,
         ),
         train_dataset=dataset
     )
@@ -65,11 +65,7 @@ def main():
     data = next(iter(DataLoader(
         dataset,
         batch_size=1,
-        collate_fn=EncoderDecoderDataCollatorWithPadding(
-            dataset.tokenizer,
-            decoder_tokenizer=tokenizer,
-            generate_labels=False
-        )
+        collate_fn=EncoderDecoderDataCollatorWithPadding(dataset.tokenizer)
     )))
     outputs = model.generate(
         **data,
