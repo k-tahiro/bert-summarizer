@@ -57,7 +57,7 @@ class DataCollatorWithPaddingWithAdditionalFeatures(DataCollatorWithPadding):
 class EncoderDecoderDataCollatorWithPadding(DataCollatorWithPadding):
     decoder_tokenizer: Optional[Union[PreTrainedTokenizer,
                                       PreTrainedTokenizerFast]] = None
-    generate_labels: bool = False
+    return_labels: bool = False
 
     def __post_init__(self):
         if self.decoder_tokenizer is None:
@@ -102,7 +102,7 @@ class EncoderDecoderDataCollatorWithPadding(DataCollatorWithPadding):
             for k, v in decoder_batch.items()
         ))
 
-        if self.generate_labels:
+        if self.return_labels:
             batch['labels'] = batch['decoder_input_ids']
 
         return batch
