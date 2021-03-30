@@ -1,5 +1,11 @@
 **BERT-based text summarizers**
 
+[![Python Versions](https://img.shields.io/pypi/pyversions/bert-summarizer.svg)](https://pypi.org/project/bert-summarizer/)
+[![](https://img.shields.io/pypi/v/bert-summarizer)](https://pypi.org/project/bert-summarizer/)
+![](https://img.shields.io/pypi/l/bert-summarizer)
+[![Python package](https://github.com/k-tahiro/bert-summarizer/actions/workflows/python-package.yml/badge.svg)](https://github.com/k-tahiro/bert-summarizer/actions/workflows/python-package.yml)
+[![codecov](https://codecov.io/gh/k-tahiro/bert-summarizer/branch/main/graph/badge.svg)](https://codecov.io/gh/k-tahiro/bert-summarizer)
+
 ## Table of Contents
 
 - [Table of Contents](#table-of-contents)

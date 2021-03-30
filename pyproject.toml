@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "bert-summarizer"
+version = "0.0.0"
+description = "Text Summarization Library based on transformers"
+license = "MIT"
+authors = ["k-tahiro <tahiro.k.ad@gmail.com>"]
+readme = "README.md"
+repository = "https://github.com/k-tahiro/bert-summarizer"
+keywords = ["BERT", "Text Summarization"]
+
+[tool.poetry-dynamic-versioning]
+enable = true
+
+[tool.poetry.dependencies]
+python = ">=3.6.2,<3.9"
+ginza = ">=4.0.5"
+transformers = {extras = ["ja", "torch"], version = ">=4.0.0"}
+
+[tool.poetry.dev-dependencies]
+tox = "*"
+pytest = "*"
+pytest-cov = "*"
+
+[build-system]
+requires = ["poetry"]
+build-backend = "poetry.masonry.api"
