@@ -20,11 +20,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install setuptools wheel twine
+          pip install poetry poetry-dynamic-versioning twine
       - name: Build and test publish
         env:
-          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.TEST_PYPI_PASSWORD }}
         run: |
-          python setup.py sdist bdist_wheel
-          twine upload -r testpypi dist/*
+          poetry publish --build --username $TWINE_USERNAME --password $TWINE_PASSWORD
