@@ -23,6 +23,7 @@ ginza = ">=4.0.5"
 
 [tool.poetry.dev-dependencies]
 tox = "*"
+coverage = "*"
 isort = "^5.7.0"
 
 [tool.isort]
