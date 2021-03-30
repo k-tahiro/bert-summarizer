@@ -13,21 +13,13 @@ enable = true
 
 [tool.poetry.dependencies]
 python = ">=3.6,<3.9"
-transformers = ">=4.0.0"
-torch = ">=1.0"
-fugashi = ">=1.0"
-ipadic = ">=1.0.0,<2.0"
-unidic_lite = ">=1.0.7"
-unidic = ">=1.0.2"
 ginza = ">=4.0.5"
+transformers = {extras = ["ja", "torch"], version = ">=4.0.0"}
 
 [tool.poetry.dev-dependencies]
 tox = "*"
-coverage = "*"
-isort = "^5.7.0"
-
-[tool.isort]
-line_length = 160
+pytest = "*"
+pytest-cov = "*"
 
 [build-system]
 requires = ["poetry"]
