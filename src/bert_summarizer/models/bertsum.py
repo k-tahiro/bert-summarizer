@@ -71,8 +71,14 @@ class BertSumExt(BertPreTrainedModel):
         )
 
         sequence_output = outputs[0].transpose(0, 1)
+        mask = torch.ones(
+            (sequence_output.size(0), sequence_output.size(0)),
+            dtype=torch.bool,
+            device=sequence_output.device,
+        ).triu_(1)
         cls_output = self.encoder(
             sequence_output,
+            mask=mask,
             src_key_padding_mask=cls_mask.bool() ^ True,
         )
         cls_output = cls_output.transpose(0, 1)
