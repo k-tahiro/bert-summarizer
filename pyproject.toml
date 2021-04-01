@@ -15,6 +15,7 @@ enable = true
 python = ">=3.6.2,<3.9"
 ginza = ">=4.0.5"
 transformers = {extras = ["ja", "torch"], version = ">=4.0.0"}
+OpenNMT-py = ">=2.0.1"
 
 [tool.poetry.dev-dependencies]
 tox = "*"
