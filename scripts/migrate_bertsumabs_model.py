@@ -126,8 +126,8 @@ class BertSumAbsModelMigrator:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input-file", required=True)
-    parser.add_argument("--output-file", required=True)
+    parser.add_argument("-i", "--input-file", required=True)
+    parser.add_argument("-o", "--output-file", required=True)
     args = parser.parse_args()
 
     state_dict = torch.load(args.input_file, map_location="cpu")
