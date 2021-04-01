@@ -19,7 +19,7 @@ class BertSumExtConfig(BertConfig):
         encoder_layer_norm_eps: float = 1e-6,
         encoder_initializer_range: float = 0.0,
         encoder_xavier_initialization: bool = True,
-        **kwargs,
+        **kwargs: Any,
     ):
         config = BertConfig.from_pretrained(base_model_name_or_path).to_dict()
         config.update(kwargs)
@@ -39,8 +39,8 @@ class BertSumExtConfig(BertConfig):
         super().__init__(**config)
         self.base_model_name_or_path = base_model_name_or_path
 
-    def to_dict(self):
-        output = super().to_dict()
+    def to_dict(self) -> Dict[str, Any]:
+        output: Dict[str, Any] = super().to_dict()
         output["encoder"] = self.encoder.to_dict()
         return output
 
@@ -50,7 +50,7 @@ class BertSumAbsConfig(EncoderDecoderConfig):
         self,
         encoder_model_name_or_path: str = "bert-base-uncased",
         smoothing: float = 0.0,
-        **kwargs,
+        **kwargs: Any,
     ):
         if "encoder" in kwargs:
             encoder_config = kwargs.pop("encoder")
