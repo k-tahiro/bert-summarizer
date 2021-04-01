@@ -1,15 +1,19 @@
 from typing import Dict, List, Union
 
+from transformers import PreTrainedTokenizer
+
 
 class BertRouge:
-    def __init__(self, tokenizer):
+    def __init__(self, tokenizer: PreTrainedTokenizer):
         self.tokenizer = tokenizer
 
     def __call__(
         self, hyps: Union[str, List[str]], refs: Union[str, List[str]]
     ) -> List[Dict[str, Dict[str, float]]]:
         if isinstance(hyps, str):
-            hyps, refs = [hyps], [refs]
+            hyps = [hyps]
+        if isinstance(refs, str):
+            refs = [refs]
 
         scores: List[Dict[str, Dict[str, float]]] = []
         for hyp, ref in zip(hyps, refs):
@@ -68,7 +72,7 @@ class BertRouge:
 
 
 class GreedySelector:
-    def __init__(self, tokenizer, n: int = 3):
+    def __init__(self, tokenizer: PreTrainedTokenizer, n: int = 3):
         self._rouge = BertRouge(tokenizer)
         self._n = n
 
