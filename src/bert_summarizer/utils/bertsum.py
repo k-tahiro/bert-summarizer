@@ -6,9 +6,7 @@ class BertRouge:
         self.tokenizer = tokenizer
 
     def __call__(
-        self,
-        hyps: Union[str, List[str]],
-        refs: Union[str, List[str]]
+        self, hyps: Union[str, List[str]], refs: Union[str, List[str]]
     ) -> List[Dict[str, Dict[str, float]]]:
         if isinstance(hyps, str):
             hyps, refs = [hyps], [refs]
@@ -19,8 +17,8 @@ class BertRouge:
             tokens_ref = [token for token in self.tokenize(ref)]
             score: Dict[str, Dict[str, float]] = {}
 
-            score['rouge-1'] = self.get_score(tokens_hyp, tokens_ref)
-            score['rouge-2'] = self.get_score(tokens_hyp, tokens_ref, 2)
+            score["rouge-1"] = self.get_score(tokens_hyp, tokens_ref)
+            score["rouge-2"] = self.get_score(tokens_hyp, tokens_ref, 2)
 
             scores.append(score)
 
@@ -30,28 +28,17 @@ class BertRouge:
         tokens: List[str] = []
 
         for subtoken in self.tokenizer.tokenize(text):
-            if subtoken.startswith('##'):
+            if subtoken.startswith("##"):
                 tokens[-1] += subtoken[2:]
             else:
                 tokens.append(subtoken)
 
         return tokens
 
-    def get_score(
-        self,
-        hyp: List[str],
-        ref: List[str],
-        n: int = 1
-    ) -> Dict[str, float]:
+    def get_score(self, hyp: List[str], ref: List[str], n: int = 1) -> Dict[str, float]:
         score: Dict[str, float] = {}
-        ngram_hyp = {
-            tuple(hyp[i:i + n])
-            for i in range(len(hyp) - (n - 1))
-        }
-        ngram_ref = {
-            tuple(ref[i:i + n])
-            for i in range(len(ref) - (n - 1))
-        }
+        ngram_hyp = {tuple(hyp[i : i + n]) for i in range(len(hyp) - (n - 1))}
+        ngram_ref = {tuple(ref[i : i + n]) for i in range(len(ref) - (n - 1))}
         ngram_inter = ngram_hyp.intersection(ngram_ref)
 
         count_hyp = len(ngram_hyp)
@@ -73,9 +60,9 @@ class BertRouge:
         else:
             f = 2 * p * r / (p + r)
 
-        score['p'] = p
-        score['r'] = r
-        score['f'] = f
+        score["p"] = p
+        score["r"] = r
+        score["f"] = f
 
         return score
 
@@ -85,12 +72,8 @@ class GreedySelector:
         self._rouge = BertRouge(tokenizer)
         self._n = n
 
-    def __call__(
-        self,
-        sents_src: List[str],
-        sents_tgt: List[str]
-    ) -> list:
-        reference = '\n'.join(sents_tgt)
+    def __call__(self, sents_src: List[str], sents_tgt: List[str]) -> list:
+        reference = "\n".join(sents_tgt)
         max_rouge = 0.0
         selected: List[int] = []
         for _ in range(self._n):
@@ -100,23 +83,17 @@ class GreedySelector:
                 if i in selected:
                     continue
                 c = selected + [i]
-                hypothesis = '\n'.join([
-                    sents_src[idx]
-                    for idx in c
-                ])
+                hypothesis = "\n".join([sents_src[idx] for idx in c])
                 score = self._rouge(hypothesis, reference)
-                rouge_1 = score[0]['rouge-1']['f']
-                rouge_2 = score[0]['rouge-2']['f']
+                rouge_1 = score[0]["rouge-1"]["f"]
+                rouge_2 = score[0]["rouge-2"]["f"]
                 rouge_score = rouge_1 + rouge_2
                 if rouge_score > cur_max_rouge:
                     cur_max_rouge = rouge_score
                     cur_id = i
-            if (cur_id == -1):
+            if cur_id == -1:
                 break
             selected.append(cur_id)
             max_rouge = cur_max_rouge
 
-        return [
-            sents_src[i]
-            for i in sorted(selected)
-        ]
+        return [sents_src[i] for i in sorted(selected)]

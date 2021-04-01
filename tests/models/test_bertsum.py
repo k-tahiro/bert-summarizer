@@ -3,13 +3,12 @@ import os
 import pytest
 import torch
 
-from bert_summarizer.config import BertSumExtConfig, BertSumAbsConfig
-from bert_summarizer.models.bertsum import BertSumExt, BertSumAbsDecoder, BertSumAbs
-
+from bert_summarizer.config import BertSumAbsConfig, BertSumExtConfig
+from bert_summarizer.models.bertsum import BertSumAbs, BertSumAbsDecoder, BertSumExt
 
 skip_on_ga = pytest.mark.skipif(
-    os.getenv('TEST_ENVIRONMENT') == 'GitHub Actions',
-    reason='Skip unittest to save memory'
+    os.getenv("TEST_ENVIRONMENT") == "GitHub Actions",
+    reason="Skip unittest to save memory",
 )
 
 
@@ -30,7 +29,10 @@ class TestBertSumExt:
         encoder_layer = model.encoder.layers[0]
         assert encoder_layer.self_attn.embed_dim == config.hidden_size
         assert encoder_layer.self_attn.num_heads == config.encoder.num_attention_heads
-        assert encoder_layer.self_attn.dropout == config.encoder.attention_probs_dropout_prob
+        assert (
+            encoder_layer.self_attn.dropout
+            == config.encoder.attention_probs_dropout_prob
+        )
         assert encoder_layer.linear1.in_features == config.hidden_size
         assert encoder_layer.linear1.out_features == config.encoder.intermediate_size
 
@@ -38,55 +40,124 @@ class TestBertSumExt:
         assert model.classifier.out_features == 1
 
     @skip_on_ga
-    @pytest.mark.parametrize('cls_mask,labels,return_dict,expected_len', [
-        (
-            torch.tensor([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-                          [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]]),
-            None,
-            None,
-            1
-        ),
-        (
-            torch.tensor([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-                          [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]]),
-            None,
-            True,
-            3
-        ),
-        (
-            torch.tensor([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-                          [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]]),
-            torch.tensor([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-                          [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]),
-            None,
-            2
-        ),
-        (
-            torch.tensor([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-                          [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]]),
-            torch.tensor([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-                          [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]),
-            True,
-            4
-        ),
-    ])
+    @pytest.mark.parametrize(
+        "cls_mask,labels,return_dict,expected_len",
+        [
+            (
+                torch.tensor(
+                    [
+                        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                    ]
+                ),
+                None,
+                None,
+                1,
+            ),
+            (
+                torch.tensor(
+                    [
+                        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                    ]
+                ),
+                None,
+                True,
+                3,
+            ),
+            (
+                torch.tensor(
+                    [
+                        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                    ]
+                ),
+                torch.tensor(
+                    [
+                        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    ]
+                ),
+                None,
+                2,
+            ),
+            (
+                torch.tensor(
+                    [
+                        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                    ]
+                ),
+                torch.tensor(
+                    [
+                        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    ]
+                ),
+                True,
+                4,
+            ),
+        ],
+    )
     def test_forward(self, config, model, cls_mask, labels, return_dict, expected_len):
         batch_size = 2
         input_size = 18
-        input_ids = torch.tensor([
-            [101, 2023, 2003, 1996, 2034, 3793, 2005, 5604, 1012,
-                102, 101, 2023, 3793, 3397, 2048, 11746, 1012, 102],
-            [101, 2023, 2003, 1996, 2117, 3793, 2005, 5604, 1012,
-                102, 101, 2023, 3793, 3397, 2048, 11746, 1012, 102],
-        ])
-        attention_mask = torch.tensor([
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        ])
-        token_type_ids = torch.tensor([
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-        ])
+        input_ids = torch.tensor(
+            [
+                [
+                    101,
+                    2023,
+                    2003,
+                    1996,
+                    2034,
+                    3793,
+                    2005,
+                    5604,
+                    1012,
+                    102,
+                    101,
+                    2023,
+                    3793,
+                    3397,
+                    2048,
+                    11746,
+                    1012,
+                    102,
+                ],
+                [
+                    101,
+                    2023,
+                    2003,
+                    1996,
+                    2117,
+                    3793,
+                    2005,
+                    5604,
+                    1012,
+                    102,
+                    101,
+                    2023,
+                    3793,
+                    3397,
+                    2048,
+                    11746,
+                    1012,
+                    102,
+                ],
+            ]
+        )
+        attention_mask = torch.tensor(
+            [
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            ]
+        )
+        token_type_ids = torch.tensor(
+            [
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+            ]
+        )
 
         outputs = model(
             input_ids=input_ids,
@@ -141,8 +212,9 @@ class TestBertSumAbsDecoder:
         assert model.get_output_embeddings() is None
 
     def test_embeddings_weight(self, config, model):
-        assert id(model.get_input_embeddings().weight) \
-            == id(model.get_output_embeddings().weight)
+        assert id(model.get_input_embeddings().weight) == id(
+            model.get_output_embeddings().weight
+        )
 
         input_embeddings = model.get_input_embeddings()
         assert input_embeddings.embedding_dim == config.hidden_size
@@ -168,12 +240,15 @@ class TestBertSumAbsDecoder:
         assert model.loss.smoothing == config.smoothing
 
     @skip_on_ga
-    @pytest.mark.parametrize('labels,return_dict,expected_len', [
-        (None, None, 5),
-        (None, True, 1),
-        (True, None, 6),
-        (True, True, 2),
-    ])
+    @pytest.mark.parametrize(
+        "labels,return_dict,expected_len",
+        [
+            (None, None, 5),
+            (None, True, 1),
+            (True, None, 6),
+            (True, True, 2),
+        ],
+    )
     def test_forward(self, config, model, labels, return_dict, expected_len):
         batch_size = 32
         hidden_size = config.hidden_size
@@ -181,29 +256,17 @@ class TestBertSumAbsDecoder:
         src_len = 512
         tgt_len = 64
 
-        input_ids = torch.randint(
-            vocab_size,
-            (batch_size, tgt_len),
-            dtype=torch.long
-        )
+        input_ids = torch.randint(vocab_size, (batch_size, tgt_len), dtype=torch.long)
         outputs = model(
             input_ids=input_ids,
-            attention_mask=torch.ones(
-                (batch_size, tgt_len),
-                dtype=torch.long
-            ),
+            attention_mask=torch.ones((batch_size, tgt_len), dtype=torch.long),
             encoder_input_ids=torch.randint(
-                vocab_size,
-                (batch_size, src_len),
-                dtype=torch.long
+                vocab_size, (batch_size, src_len), dtype=torch.long
             ),
             encoder_hidden_states=torch.rand(
                 (batch_size, src_len, hidden_size),
             ),
-            encoder_attention_mask=torch.ones(
-                (batch_size, src_len),
-                dtype=torch.long
-            ),
+            encoder_attention_mask=torch.ones((batch_size, src_len), dtype=torch.long),
             labels=input_ids if labels else None,
             return_dict=return_dict,
         )
@@ -247,8 +310,9 @@ class TestBertSumAbs:
         dec_num_tokens = dec_input_embeddings_weight.size(0)
         num_shared_tokens = min(enc_num_tokens, dec_num_tokens)
 
-        assert (enc_input_embeddings_weight[:num_shared_tokens, :] ==
-                dec_input_embeddings_weight[:num_shared_tokens, :]).all()
+        assert (
+            enc_input_embeddings_weight[:num_shared_tokens, :]
+            == dec_input_embeddings_weight[:num_shared_tokens, :]
+        ).all()
 
-        assert id(dec_input_embeddings_weight) \
-            == id(dec_output_embeddings_weight)
+        assert id(dec_input_embeddings_weight) == id(dec_output_embeddings_weight)

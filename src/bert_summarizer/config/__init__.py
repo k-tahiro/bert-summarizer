@@ -1,1 +1,1 @@
-from .bertsum import BertSumExtConfig, BertSumAbsConfig
+from .bertsum import BertSumAbsConfig, BertSumExtConfig
