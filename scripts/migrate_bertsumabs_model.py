@@ -67,7 +67,7 @@ class BertSumAbsModelMigrator:
                 continue
 
             if k in self.MAPPING:
-                if self.n != 0:
+                if self.n != 0 and self.attns:
                     self._update_state_dict()
                 self.new_state_dict[self.MAPPING[k]] = v
                 continue
