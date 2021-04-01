@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import torch
 from torch import nn
@@ -56,14 +56,14 @@ class BertSumExt(BertPreTrainedModel):
 
     def forward(
         self,
-        input_ids=None,
-        attention_mask=None,
-        token_type_ids=None,
-        cls_mask=None,
-        labels=None,
-        return_dict=None,
-        **kwargs,
-    ):
+        input_ids: Optional[torch.Tensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        token_type_ids: Optional[torch.Tensor] = None,
+        cls_mask: Optional[torch.Tensor] = None,
+        labels: Optional[torch.Tensor] = None,
+        return_dict: Optional[bool] = None,
+        **kwargs: Any,
+    ) -> Union[Tuple[Optional[torch.Tensor]], SequenceClassifierOutput]:
         outputs = self.bert(
             input_ids=input_ids,
             attention_mask=attention_mask,
@@ -75,7 +75,9 @@ class BertSumExt(BertPreTrainedModel):
         sequence_output = outputs[0].transpose(0, 1)
         cls_output = self.encoder(
             sequence_output,
-            src_key_padding_mask=cls_mask.bool() ^ True,
+            src_key_padding_mask=cls_mask.bool() ^ True
+            if cls_mask is not None
+            else None,
         )
         cls_output = cls_output.transpose(0, 1)
 
@@ -84,7 +86,10 @@ class BertSumExt(BertPreTrainedModel):
         loss = None
         if labels is not None:
             loss = self.loss(logits, labels.float())
-            loss = (loss * cls_mask.float()).sum(1).mean()
+            if cls_mask is not None:
+                loss = (loss * cls_mask.float()).sum(1).mean()
+            else:
+                loss = loss.sum(1).mean()
 
         if not return_dict:
             output = (logits,) + outputs[2:]
@@ -130,7 +135,7 @@ class BertSumAbsDecoder(BertLMHeadModel):
     def get_input_embeddings(self) -> nn.Module:
         return self.embeddings[0]
 
-    def set_input_embeddings(self, embeddings: nn.Embedding):
+    def set_input_embeddings(self, embeddings: nn.Embedding) -> None:
         self.embeddings[0] = embeddings
 
     def get_output_embeddings(self) -> nn.Module:
@@ -138,29 +143,39 @@ class BertSumAbsDecoder(BertLMHeadModel):
 
     def forward(
         self,
-        input_ids=None,
-        attention_mask=None,
-        token_type_ids=None,
-        position_ids=None,
-        head_mask=None,
-        inputs_embeds=None,
-        encoder_hidden_states=None,
-        encoder_attention_mask=None,
-        labels=None,
-        output_attentions=None,
-        output_hidden_states=None,
-        return_dict=None,
-        **kwargs,
-    ):
+        input_ids: Optional[torch.Tensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        token_type_ids: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.Tensor] = None,
+        head_mask: Optional[torch.Tensor] = None,
+        inputs_embeds: Optional[torch.Tensor] = None,
+        encoder_hidden_states: Optional[torch.Tensor] = None,
+        encoder_attention_mask: Optional[torch.Tensor] = None,
+        labels: Optional[torch.Tensor] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        return_dict: Optional[bool] = None,
+        **kwargs: Any,
+    ) -> Union[Tuple[Optional[torch.Tensor]], CausalLMOutputWithCrossAttentions]:
         tgt = self.embeddings(input_ids).transpose(0, 1)
+        if encoder_hidden_states is None:
+            raise ValueError("encoder_hidden_states must be passed.")
         memory = encoder_hidden_states.transpose(0, 1)
+
+        # Create masks
         tgt_mask = torch.ones(
             (tgt.size(0), tgt.size(0)),
             dtype=torch.bool,
             device=tgt.device,
         ).triu_(1)
-        tgt_key_padding_mask = attention_mask ^ True
-        memory_key_padding_mask = encoder_attention_mask ^ True
+        tgt_key_padding_mask = (
+            attention_mask ^ True if attention_mask is not None else None
+        )
+        memory_key_padding_mask = (
+            encoder_attention_mask ^ True
+            if encoder_attention_mask is not None
+            else None
+        )
 
         output = self.decoder(
             tgt,
