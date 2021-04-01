@@ -1,1 +1,1 @@
-from .bertsum import BertSumExt, BertSumAbs
+from .bertsum import BertSumAbs, BertSumExt

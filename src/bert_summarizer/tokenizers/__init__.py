@@ -1,1 +1,1 @@
-from .bertsum import BertSumTokenizer, BertSumJapaneseTokenizer
+from .bertsum import BertSumJapaneseTokenizer, BertSumTokenizer
