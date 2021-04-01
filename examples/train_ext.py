@@ -43,7 +43,7 @@ def create_model(model_name: str = "bert-base-uncased") -> BertSumExt:
     return BertSumExt(config)
 
 
-def main():
+def main() -> None:
     basicConfig(level="INFO")
 
     dataset = create_dataset()

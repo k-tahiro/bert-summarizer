@@ -46,7 +46,7 @@ def create_model(dataset: BertSumAbsDataset) -> BertSumAbs:
     return BertSumAbs(config)
 
 
-def main():
+def main() -> None:
     basicConfig(level="INFO")
 
     dataset = create_dataset(n=1000)
