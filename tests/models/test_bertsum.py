@@ -1,7 +1,9 @@
 import os
+from typing import Optional
 
 import pytest
 import torch
+from transformers import BertConfig
 
 from bert_summarizer.config import BertSumAbsConfig, BertSumExtConfig
 from bert_summarizer.models.bertsum import BertSumAbs, BertSumAbsDecoder, BertSumExt
@@ -14,14 +16,16 @@ skip_on_ga = pytest.mark.skipif(
 
 class TestBertSumExt:
     @pytest.fixture
-    def config(self):
+    def config(self) -> BertSumExtConfig:
         return BertSumExtConfig()
 
     @pytest.fixture
-    def model(self, config):
+    def model(self, config: BertSumExtConfig) -> BertSumExt:
         return BertSumExt(config)
 
-    def test_network_structure(self, config, model):
+    def test_network_structure(
+        self, config: BertSumExtConfig, model: BertSumExt
+    ) -> None:
         assert len(model.encoder.layers) == config.encoder.num_hidden_layers
         assert model.encoder.norm.normalized_shape[0] == config.hidden_size
         assert model.encoder.norm.eps == config.encoder.layer_norm_eps
@@ -99,7 +103,15 @@ class TestBertSumExt:
             ),
         ],
     )
-    def test_forward(self, config, model, cls_mask, labels, return_dict, expected_len):
+    def test_forward(
+        self,
+        config: BertSumExtConfig,
+        model: BertSumExt,
+        cls_mask: torch.Tensor,
+        labels: Optional[torch.Tensor],
+        return_dict: Optional[bool],
+        expected_len: int,
+    ) -> None:
         batch_size = 2
         input_size = 18
         input_ids = torch.tensor(
@@ -192,26 +204,28 @@ class TestBertSumExt:
 
 class TestBertSumAbsDecoder:
     @pytest.fixture
-    def config(self):
+    def config(self) -> BertConfig:
         return BertSumAbsConfig(smoothing=0.1).decoder
 
     @pytest.fixture
-    def model(self, config):
+    def model(self, config: BertConfig) -> BertSumAbsDecoder:
         return BertSumAbsDecoder(config)
 
-    def test_get_input_embeddings(self, model):
+    def test_get_input_embeddings(self, model: BertSumAbsDecoder) -> None:
         model.embeddings[0] = None
         assert model.get_input_embeddings() is None
 
-    def test_set_input_embeddings(self, model):
+    def test_set_input_embeddings(self, model: BertSumAbsDecoder) -> None:
         model.set_input_embeddings(None)
         assert model.embeddings[0] is None
 
-    def test_get_output_embeddings(self, model):
+    def test_get_output_embeddings(self, model: BertSumAbsDecoder) -> None:
         model.generator = None
         assert model.get_output_embeddings() is None
 
-    def test_embeddings_weight(self, config, model):
+    def test_embeddings_weight(
+        self, config: BertConfig, model: BertSumAbsDecoder
+    ) -> None:
         assert id(model.get_input_embeddings().weight) == id(
             model.get_output_embeddings().weight
         )
@@ -220,7 +234,9 @@ class TestBertSumAbsDecoder:
         assert input_embeddings.embedding_dim == config.hidden_size
         assert input_embeddings.num_embeddings == config.vocab_size
 
-    def test_network_structure(self, config, model):
+    def test_network_structure(
+        self, config: BertConfig, model: BertSumAbsDecoder
+    ) -> None:
         assert len(model.decoder.layers) == config.num_hidden_layers
         assert model.decoder.norm.normalized_shape[0] == config.hidden_size
         assert model.decoder.norm.eps == config.layer_norm_eps
@@ -235,7 +251,7 @@ class TestBertSumAbsDecoder:
         assert model.generator.in_features == config.hidden_size
         assert model.generator.out_features == config.vocab_size
 
-    def test_loss(self, config, model):
+    def test_loss(self, config: BertConfig, model: BertSumAbsDecoder) -> None:
         assert model.loss.cls == config.vocab_size
         assert model.loss.smoothing == config.smoothing
 
@@ -249,7 +265,14 @@ class TestBertSumAbsDecoder:
             (True, True, 2),
         ],
     )
-    def test_forward(self, config, model, labels, return_dict, expected_len):
+    def test_forward(
+        self,
+        config: BertConfig,
+        model: BertSumAbsDecoder,
+        labels: Optional[bool],
+        return_dict: Optional[bool],
+        expected_len: int,
+    ) -> None:
         batch_size = 32
         hidden_size = config.hidden_size
         vocab_size = config.vocab_size
@@ -294,14 +317,14 @@ class TestBertSumAbsDecoder:
 
 class TestBertSumAbs:
     @pytest.fixture
-    def config(self):
+    def config(self) -> BertSumAbsConfig:
         return BertSumAbsConfig(vocab_size=32003)
 
     @pytest.fixture
-    def model(self, config):
+    def model(self, config: BertSumAbsConfig) -> BertSumAbs:
         return BertSumAbs(config)
 
-    def test_embeddings_weight(self, model):
+    def test_embeddings_weight(self, model: BertSumAbs) -> None:
         enc_input_embeddings_weight = model.encoder.get_input_embeddings().weight
         dec_input_embeddings_weight = model.decoder.get_input_embeddings().weight
         dec_output_embeddings_weight = model.decoder.get_output_embeddings().weight
