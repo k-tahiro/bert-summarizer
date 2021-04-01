@@ -20,6 +20,23 @@ transformers = {extras = ["ja", "torch"], version = ">=4.0.0"}
 tox = "*"
 pytest = "*"
 pytest-cov = "*"
+pre-commit = "*"
+
+[tool.black]
+ensure_newline_before_comments = true
+force_grid_wrap = 0
+include_trailing_comma = true
+line_length = 88
+multi_line_output = 3
+use_parentheses = true
+
+[tool.isort]
+ensure_newline_before_comments = true
+force_grid_wrap = 0
+include_trailing_comma = true
+line_length = 88
+multi_line_output = 3
+use_parentheses = true
 
 [build-system]
 requires = ["poetry"]
