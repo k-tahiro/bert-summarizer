@@ -44,15 +44,17 @@ class BertSumDataset(Dataset):
         self.data = encoded_src
 
     @property
-    def is_japanese(self):
+    def is_japanese(self) -> bool:
         return "bert-base-japanese" in self.model_name
 
     @property
-    def tokenizer(self):
+    def tokenizer(self) -> BertSumTokenizer:
+        tokenizer: BertSumTokenizer
         if self.is_japanese:
-            return BertSumJapaneseTokenizer.from_pretrained(self.model_name)
+            tokenizer = BertSumJapaneseTokenizer.from_pretrained(self.model_name)
         else:
-            return BertSumTokenizer.from_pretrained(self.model_name)
+            tokenizer = BertSumTokenizer.from_pretrained(self.model_name)
+        return tokenizer
 
     def _encode(
         self,
@@ -184,13 +186,12 @@ class BertSumExtDataset(BertSumDataset):
         if self.tgt is None:
             return
 
-        generate_tgt = isinstance(self.tgt[0], str)
         valid_data = []
         valid_sentences = []
         valid_tgt = []
         invalid_data = []
         for data, sents_src, sents_tgt in zip(self.data, self.sentences, self.tgt):
-            if generate_tgt:
+            if isinstance(sents_tgt, str):
                 sents_tgt = self._sentencize(sents_tgt)
                 sents_tgt = self.gs(sents_src, sents_tgt)
             else:
@@ -259,18 +260,20 @@ class BertSumAbsDataset(BertSumDataset):
         self.vocab_size = vocab_size
 
     @property
-    def tgt_tokenizer(self):
+    def tgt_tokenizer(self) -> BertSumTokenizer:
+        tokenizer: BertSumTokenizer
         if self.is_japanese:
-            return BertSumJapaneseTokenizer.from_pretrained(
+            tokenizer = BertSumJapaneseTokenizer.from_pretrained(
                 self.model_name,
                 cls_token=self.TGT_CLS_TOKEN,
                 sep_token=self.TGT_SEP_TOKEN,
                 additional_special_tokens=self.TGT_ADDITIONAL_SPECIAL_TOKENS,
             )
         else:
-            return BertSumTokenizer.from_pretrained(
+            tokenizer = BertSumTokenizer.from_pretrained(
                 self.model_name,
                 cls_token=self.TGT_CLS_TOKEN,
                 sep_token=self.TGT_SEP_TOKEN,
                 additional_special_tokens=self.TGT_ADDITIONAL_SPECIAL_TOKENS,
             )
+        return tokenizer

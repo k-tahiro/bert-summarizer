@@ -26,7 +26,7 @@ class DataCollatorWithPaddingWithAdditionalFeatures(DataCollatorWithPadding):
             for feature in features
         ]
 
-        batch = self.tokenizer.pad(
+        batch: Dict[str, torch.Tensor] = self.tokenizer.pad(
             features,
             padding=self.padding,
             max_length=self.max_length,
@@ -67,7 +67,7 @@ class EncoderDecoderDataCollatorWithPadding(DataCollatorWithPadding):
     return_decoder: bool = True
     return_labels: bool = True
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.decoder_tokenizer is None:
             self.decoder_tokenizer = self.tokenizer
 
@@ -101,14 +101,14 @@ class EncoderDecoderDataCollatorWithPadding(DataCollatorWithPadding):
             encoder_features.append(encoder_feature)
             decoder_features.append(decoder_feature)
 
-        encoder_batch = self.tokenizer.pad(
+        encoder_batch: Dict[str, torch.Tensor] = self.tokenizer.pad(
             encoder_features,
             padding=self.padding,
             max_length=self.max_length,
             pad_to_multiple_of=self.pad_to_multiple_of,
             return_tensors="pt",
         )
-        if any(decoder_features):
+        if self.decoder_tokenizer is not None and any(decoder_features):
             decoder_batch = self.decoder_tokenizer.pad(
                 decoder_features,
                 padding=self.padding,
