@@ -4,7 +4,7 @@ from typing import List, Optional
 from transformers import BertJapaneseTokenizer, BertTokenizer
 
 
-class BertSumMixin:
+class BertSumTokenizer(BertTokenizer):
     def build_inputs_with_special_tokens(
         self, token_ids_0: List[int], token_ids_1: Optional[List[int]] = None
     ) -> List[int]:
@@ -38,18 +38,14 @@ class BertSumMixin:
 
     def get_sent_sep_token_ids(self) -> List[int]:
         if self.additional_special_tokens_ids:
-            sent_sep_token_ids = self.additional_special_tokens_ids
+            sent_sep_token_ids: List[int] = self.additional_special_tokens_ids
         else:
             sent_sep_token_ids = [self.sep_token_id, self.cls_token_id]
 
         return sent_sep_token_ids
 
 
-class BertSumTokenizer(BertSumMixin, BertTokenizer):
-    pass
-
-
-class BertSumJapaneseTokenizer(BertSumMixin, BertJapaneseTokenizer):
+class BertSumJapaneseTokenizer(BertJapaneseTokenizer, BertSumTokenizer):
     ASCII_PATTERN = re.compile(r"[A-Za-z]+")
 
     @classmethod
