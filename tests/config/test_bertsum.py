@@ -46,8 +46,7 @@ class TestBertSumExtConfig:
         default_bert_config: BertConfig,
         default_ext_encoder_config: BertConfig,
     ) -> None:
-        config = BertSumExtConfig()
-        config = config.to_dict()
+        config = BertSumExtConfig().to_dict()
 
         base_model_name_or_path = config.pop("base_model_name_or_path")
         encoder_config = config.pop("encoder")
