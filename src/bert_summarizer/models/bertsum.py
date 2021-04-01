@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import torch
 from onmt.decoders import TransformerDecoder
 from onmt.modules import Embeddings
-from onmt.utils.loss import LabelSmoothingLoss
 from torch import nn
 from torch.nn.init import xavier_uniform_
 from transformers import (
