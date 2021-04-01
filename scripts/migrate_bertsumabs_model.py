@@ -1,5 +1,7 @@
 import argparse
+import json
 from collections import defaultdict
+from pathlib import Path
 from typing import Dict, List
 
 import torch
@@ -126,15 +128,22 @@ class BertSumAbsModelMigrator:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input-file", required=True)
-    parser.add_argument("-o", "--output-file", required=True)
+    parser.add_argument("-i", "--input-dir", required=True)
+    parser.add_argument("-o", "--output-dir", required=True)
     args = parser.parse_args()
 
-    state_dict = torch.load(args.input_file, map_location="cpu")
+    input_dir = Path(args.input_dir)
+    with open(input_dir / "config.json") as f:
+        config = json.load(f)
+    config["use_onmt_transformer"] = True
+    state_dict = torch.load(input_dir / "pytorch.bin", map_location="cpu")
     migrator = BertSumAbsModelMigrator()
-
     new_state_dict = migrator.migrate(state_dict)
-    torch.save(new_state_dict, args.output_file)
+
+    output_dir = Path(args.output_dir)
+    with open(output_dir / "config.json", "w") as f:
+        json.dump(config, f)
+    torch.save(new_state_dict, output_dir / "pytorch.bin")
 
 
 if __name__ == "__main__":
