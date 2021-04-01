@@ -217,12 +217,12 @@ class TestBertSumAbsOpenNMTDecoder:
         return BertSumAbsOpenNMTDecoder(config)
 
     def test_get_input_embeddings(self, model: BertSumAbsOpenNMTDecoder) -> None:
-        model.embeddings[0] = None
+        model.decoder.embeddings.make_embedding.emb_luts[0] = None
         assert model.get_input_embeddings() is None
 
     def test_set_input_embeddings(self, model: BertSumAbsOpenNMTDecoder) -> None:
         model.set_input_embeddings(None)
-        assert model.embeddings[0] is None
+        assert model.decoder.embeddings.make_embedding.emb_luts[0] is None
 
     def test_get_output_embeddings(self, model: BertSumAbsOpenNMTDecoder) -> None:
         model.generator = None
