@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from torch import nn
 from torch.optim import AdamW
@@ -24,7 +24,7 @@ class EncoderDecoderTrainer(Trainer):
         decoder_learning_rate: float = 0.2,
         encoder_warmup_steps: int = 20000,
         decoder_warmup_steps: int = 10000,
-        **kwargs,
+        **kwargs: Any,
     ):
         logger.info(f"# of encoder parameters={get_n_params(model.encoder)}")
         logger.info(f"# of decoder parameters={get_n_params(model.decoder)}")

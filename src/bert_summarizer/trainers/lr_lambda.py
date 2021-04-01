@@ -18,7 +18,9 @@ def get_transformer_schedule_with_warmup(
     optimizer: Optimizer, num_warmup_steps: Union[int, List[int]], last_epoch: int = -1
 ) -> LambdaLR:
     if isinstance(num_warmup_steps, int):
-        lr_lambda = TransformerScheduler(num_warmup_steps)
+        lr_lambda: Union[
+            TransformerScheduler, List[TransformerScheduler]
+        ] = TransformerScheduler(num_warmup_steps)
     else:
         lr_lambda = [TransformerScheduler(n) for n in num_warmup_steps]
 
