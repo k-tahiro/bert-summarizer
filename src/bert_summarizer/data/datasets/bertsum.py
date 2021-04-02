@@ -7,23 +7,23 @@ import spacy
 from spacy.lang.en import English
 from torch.utils.data import Dataset
 
-from ...tokenizers import BertSumTokenizer, BertSumJapaneseTokenizer
+from ...tokenizers import BertSumJapaneseTokenizer, BertSumTokenizer
 from ...utils.bertsum import GreedySelector
 
 logger = getLogger(__name__)
 
 
 class BertSumDataset(Dataset):
-    EMPTY_PATTERN = re.compile(r'\s+')
+    EMPTY_PATTERN = re.compile(r"\s+")
 
     def __init__(
         self,
         model_name: str,
         src: List[str],
-        tgt: Optional[Union[List[str], List[List[str]]]] = None
+        tgt: Optional[Union[List[str], List[List[str]]]] = None,
     ):
         if tgt is not None and len(src) != len(tgt):
-            raise RuntimeError('Different length src v.s. tgt pair is given.')
+            raise RuntimeError("Different length src v.s. tgt pair is given.")
 
         # keep inputs
         self.model_name = model_name
@@ -32,7 +32,7 @@ class BertSumDataset(Dataset):
 
         # load nlp
         if self.is_japanese:
-            nlp = spacy.load('ja_ginza')
+            nlp = spacy.load("ja_ginza")
         else:
             nlp = English()
             sentencizer = nlp.create_pipe("sentencizer")
@@ -44,15 +44,17 @@ class BertSumDataset(Dataset):
         self.data = encoded_src
 
     @property
-    def is_japanese(self):
-        return 'bert-base-japanese' in self.model_name
+    def is_japanese(self) -> bool:
+        return "bert-base-japanese" in self.model_name
 
     @property
-    def tokenizer(self):
+    def tokenizer(self) -> BertSumTokenizer:
+        tokenizer: BertSumTokenizer
         if self.is_japanese:
-            return BertSumJapaneseTokenizer.from_pretrained(self.model_name)
+            tokenizer = BertSumJapaneseTokenizer.from_pretrained(self.model_name)
         else:
-            return BertSumTokenizer.from_pretrained(self.model_name)
+            tokenizer = BertSumTokenizer.from_pretrained(self.model_name)
+        return tokenizer
 
     def _encode(
         self,
@@ -106,56 +108,56 @@ class BertSumDataset(Dataset):
     def _concat_sents(
         tokenizer: Union[BertSumTokenizer, BertSumJapaneseTokenizer],
         output_0: Dict[str, List[int]],
-        output_1: Dict[str, List[int]]
+        output_1: Dict[str, List[int]],
     ) -> Dict[str, List[int]]:
-        input_ids_0 = output_0['input_ids'][1:-1]
-        input_ids_1 = output_1['input_ids'][1:-1]
-        input_ids = tokenizer.build_inputs_with_special_tokens(input_ids_0,
-                                                               input_ids_1)
+        input_ids_0 = output_0["input_ids"][1:-1]
+        input_ids_1 = output_1["input_ids"][1:-1]
+        input_ids = tokenizer.build_inputs_with_special_tokens(input_ids_0, input_ids_1)
 
         sent_sep_token_ids = tokenizer.get_sent_sep_token_ids()
         i = sum(divmod(len(sent_sep_token_ids), 2))
-        token_type_ids = output_0['token_type_ids'][:-1] \
-            + [1] * i \
-            + [0] * (len(sent_sep_token_ids) - i) \
-            + output_1['token_type_ids'][1:]
+        token_type_ids = (
+            output_0["token_type_ids"][:-1]
+            + [1] * i
+            + [0] * (len(sent_sep_token_ids) - i)
+            + output_1["token_type_ids"][1:]
+        )
 
-        assert len(input_ids) == len(token_type_ids), \
-            'concatenated length mismatch: ' \
-            f'len(input_ids)={len(input_ids)} != len(token_type_ids)={len(token_type_ids)}'
+        assert len(input_ids) == len(token_type_ids), (
+            "concatenated length mismatch: "
+            f"len(input_ids)={len(input_ids)} != len(token_type_ids)={len(token_type_ids)}"
+        )
 
         return {
-            'input_ids': input_ids,
-            'token_type_ids': token_type_ids,
+            "input_ids": input_ids,
+            "token_type_ids": token_type_ids,
         }
 
     @staticmethod
     def _truncate(
         tokenizer: Union[BertSumTokenizer, BertSumJapaneseTokenizer],
-        encoded_inputs: Dict[str, List[int]]
+        encoded_inputs: Dict[str, List[int]],
     ) -> Dict[str, List[int]]:
-        input_ids = encoded_inputs['input_ids'][1:-1]
-        num_tokens_to_remove = len(input_ids) \
-            - tokenizer.model_max_length \
-            + 2  # for metatoken
+        input_ids = encoded_inputs["input_ids"][1:-1]
+        num_tokens_to_remove = (
+            len(input_ids) - tokenizer.model_max_length + 2
+        )  # for metatoken
         input_ids, _, _ = tokenizer.truncate_sequences(
             input_ids,
             num_tokens_to_remove=num_tokens_to_remove,
-            truncation_strategy='longest_first',
+            truncation_strategy="longest_first",
         )
         input_ids = tokenizer.build_inputs_with_special_tokens(input_ids)
 
-        token_type_ids = encoded_inputs['token_type_ids'][:len(input_ids) - 1]
+        token_type_ids = encoded_inputs["token_type_ids"][: len(input_ids) - 1]
         token_type_ids.append(token_type_ids[-1])
 
-        assert len(input_ids) == len(token_type_ids), \
-            'truncated length mismatch: ' \
-            f'len(input_ids)={len(input_ids)} != len(token_type_ids)={len(token_type_ids)}'
+        assert len(input_ids) == len(token_type_ids), (
+            "truncated length mismatch: "
+            f"len(input_ids)={len(input_ids)} != len(token_type_ids)={len(token_type_ids)}"
+        )
 
-        return {
-            'input_ids': input_ids,
-            'token_type_ids': token_type_ids
-        }
+        return {"input_ids": input_ids, "token_type_ids": token_type_ids}
 
     def __len__(self) -> int:
         return len(self.data)
@@ -169,7 +171,7 @@ class BertSumExtDataset(BertSumDataset):
         self,
         model_name: str,
         src: List[str],
-        tgt: Optional[Union[List[str], List[List[str]]]] = None
+        tgt: Optional[Union[List[str], List[List[str]]]] = None,
     ):
         super().__init__(model_name, src, tgt)
 
@@ -179,58 +181,49 @@ class BertSumExtDataset(BertSumDataset):
         self.gs = GreedySelector(tokenizer)
 
         for data in self.data:
-            data['cls_mask'] = [
-                1 * (id_ == bos_token_id)
-                for id_ in data['input_ids']
-            ]
+            data["cls_mask"] = [1 * (id_ == bos_token_id) for id_ in data["input_ids"]]
 
         if self.tgt is None:
             return
 
-        generate_tgt = isinstance(self.tgt[0], str)
         valid_data = []
         valid_sentences = []
         valid_tgt = []
         invalid_data = []
         for data, sents_src, sents_tgt in zip(self.data, self.sentences, self.tgt):
-            if generate_tgt:
+            if isinstance(sents_tgt, str):
                 sents_tgt = self._sentencize(sents_tgt)
                 sents_tgt = self.gs(sents_src, sents_tgt)
             else:
                 sents_tgt = [
-                    sent
-                    for text in sents_tgt
-                    for sent in self._sentencize(text)
+                    sent for text in sents_tgt for sent in self._sentencize(text)
                 ]  # to support multiple sentences in one sentence
 
-            data['label'] = []
+            data["label"] = []
             index = 0
-            for m in data['cls_mask']:
+            for m in data["cls_mask"]:
                 if m:
                     sent = sents_src[index]
-                    data['label'].append(
-                        1 * any(st in sent for st in sents_tgt)
-                    )
+                    data["label"].append(1 * any(st in sent for st in sents_tgt))
                     index += 1
                 else:
-                    data['label'].append(0)
+                    data["label"].append(0)
 
-            if sum(data['label']):
+            if sum(data["label"]):
                 valid_data.append(data)
                 valid_sentences.append(sents_src)
                 valid_tgt.append(sents_tgt)
             else:
-                logger.warning(
-                    'Invalid src-tgt pair was given. There are no labels.'
-                )
+                logger.warning("Invalid src-tgt pair was given. There are no labels.")
                 logger.debug(
-                    f'src sentences: {sents_src}\n'
-                    f'tgt sentences: {sents_tgt}'
+                    f"src sentences: {sents_src}\n" f"tgt sentences: {sents_tgt}"
                 )
-                invalid_data.append({
-                    'src': sents_src,
-                    'tgt': sents_tgt,
-                })
+                invalid_data.append(
+                    {
+                        "src": sents_src,
+                        "tgt": sents_tgt,
+                    }
+                )
 
         self.data = valid_data
         self.sentences = valid_sentences
@@ -239,15 +232,12 @@ class BertSumExtDataset(BertSumDataset):
 
 
 class BertSumAbsDataset(BertSumDataset):
-    TGT_CLS_TOKEN = '[unused1]'
-    TGT_SEP_TOKEN = '[unused2]'
-    TGT_ADDITIONAL_SPECIAL_TOKENS = ['[unused3]']
+    TGT_CLS_TOKEN = "[unused1]"
+    TGT_SEP_TOKEN = "[unused2]"
+    TGT_ADDITIONAL_SPECIAL_TOKENS = ["[unused3]"]
 
     def __init__(
-        self,
-        model_name: str,
-        src: List[str],
-        tgt: Optional[List[str]] = None
+        self, model_name: str, src: List[str], tgt: Optional[List[str]] = None
     ):
         super().__init__(model_name, src, tgt)
 
@@ -257,31 +247,33 @@ class BertSumAbsDataset(BertSumDataset):
         tokenizer = self.tgt_tokenizer
         encoded_tgt = self._encode(tokenizer, tgt, False)
         for data, e_tgt in zip(self.data, encoded_tgt):
-            data.update({
-                f'decoder_{k}': v
-                for k, v in e_tgt.items()
-            })
+            data.update({f"decoder_{k}": v for k, v in e_tgt.items()})
 
         # set meta objects
         vocab_size = tokenizer.vocab_size
-        for token in [self.TGT_CLS_TOKEN, self.TGT_SEP_TOKEN] + self.TGT_ADDITIONAL_SPECIAL_TOKENS:
+        for token in [
+            self.TGT_CLS_TOKEN,
+            self.TGT_SEP_TOKEN,
+        ] + self.TGT_ADDITIONAL_SPECIAL_TOKENS:
             if token not in tokenizer.vocab:
                 vocab_size += 1
         self.vocab_size = vocab_size
 
     @property
-    def tgt_tokenizer(self):
+    def tgt_tokenizer(self) -> BertSumTokenizer:
+        tokenizer: BertSumTokenizer
         if self.is_japanese:
-            return BertSumJapaneseTokenizer.from_pretrained(
+            tokenizer = BertSumJapaneseTokenizer.from_pretrained(
                 self.model_name,
                 cls_token=self.TGT_CLS_TOKEN,
                 sep_token=self.TGT_SEP_TOKEN,
-                additional_special_tokens=self.TGT_ADDITIONAL_SPECIAL_TOKENS
+                additional_special_tokens=self.TGT_ADDITIONAL_SPECIAL_TOKENS,
             )
         else:
-            return BertSumTokenizer.from_pretrained(
+            tokenizer = BertSumTokenizer.from_pretrained(
                 self.model_name,
                 cls_token=self.TGT_CLS_TOKEN,
                 sep_token=self.TGT_SEP_TOKEN,
-                additional_special_tokens=self.TGT_ADDITIONAL_SPECIAL_TOKENS
+                additional_special_tokens=self.TGT_ADDITIONAL_SPECIAL_TOKENS,
             )
+        return tokenizer

@@ -15,11 +15,32 @@ enable = true
 python = ">=3.6.2,<3.9"
 ginza = ">=4.0.5"
 transformers = {extras = ["ja", "torch"], version = ">=4.0.0"}
+OpenNMT-py = {version = ">=2.0.1", optional = true}
 
 [tool.poetry.dev-dependencies]
 tox = "*"
 pytest = "*"
 pytest-cov = "*"
+pre-commit = "*"
+
+[tool.poetry.extras]
+onmt = ["OpenNMT-py"]
+
+[tool.black]
+ensure_newline_before_comments = true
+force_grid_wrap = 0
+include_trailing_comma = true
+line_length = 88
+multi_line_output = 3
+use_parentheses = true
+
+[tool.isort]
+ensure_newline_before_comments = true
+force_grid_wrap = 0
+include_trailing_comma = true
+line_length = 88
+multi_line_output = 3
+use_parentheses = true
 
 [build-system]
 requires = ["poetry"]

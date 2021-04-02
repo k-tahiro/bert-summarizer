@@ -1,40 +1,40 @@
 from logging import basicConfig, getLogger
 
 from torch.utils.data import DataLoader
-from transformers import (
-    BertConfig,
-    DataCollatorWithPadding,
-    Trainer,
-    TrainingArguments,
-)
+from transformers import BertConfig, DataCollatorWithPadding, Trainer, TrainingArguments
 
 from bert_summarizer.config import BertSumExtConfig
-from bert_summarizer.data import BertSumExtDataset, DataCollatorWithPaddingWithAdditionalFeatures
+from bert_summarizer.data import (
+    BertSumExtDataset,
+    DataCollatorWithPaddingWithAdditionalFeatures,
+)
 from bert_summarizer.models import BertSumExt
 
 logger = getLogger(__name__)
 
 
-def create_dataset(model_name: str = 'bert-base-uncased', n: int = 1000) -> BertSumExtDataset:
+def create_dataset(
+    model_name: str = "bert-base-uncased", n: int = 1000
+) -> BertSumExtDataset:
     src = [
-        'This is the first text for testing. This text contains two sentences.',
-        'This is the second text for testing. This text contains two sentences.'
+        "This is the first text for testing. This text contains two sentences.",
+        "This is the second text for testing. This text contains two sentences.",
     ] * n
     tgt = [
-        ['This is the first text for testing.'],
-        ['This is the second text for testing.'],
+        ["This is the first text for testing."],
+        ["This is the second text for testing."],
     ] * n
 
     return BertSumExtDataset(model_name, src, tgt)
 
 
-def create_model(model_name: str = 'bert-base-uncased') -> BertSumExt:
+def create_model(model_name: str = "bert-base-uncased") -> BertSumExt:
     encoder = BertConfig(
         num_hidden_layers=2,
         num_attention_heads=8,
         intermediate_size=2048,
         attention_probs_dropout_prob=0.1,
-        layer_norm_eps=1e-6
+        layer_norm_eps=1e-6,
     )
     config = BertSumExtConfig(
         model_name,
@@ -43,17 +43,16 @@ def create_model(model_name: str = 'bert-base-uncased') -> BertSumExt:
     return BertSumExt(config)
 
 
-def main():
-    basicConfig(level='INFO')
+def main() -> None:
+    basicConfig(level="INFO")
 
     dataset = create_dataset()
     data_collator = DataCollatorWithPaddingWithAdditionalFeatures(
-        dataset.tokenizer,
-        additional_features=['cls_mask', 'label']
+        dataset.tokenizer, additional_features=["cls_mask", "label"]
     )
     model = create_model(dataset.model_name)
 
-    args = TrainingArguments('BertSumExt')
+    args = TrainingArguments("BertSumExt")
     trainer = Trainer(
         model,
         args,
@@ -62,16 +61,14 @@ def main():
     )
     trainer.train()
 
-    data = next(iter(DataLoader(
-        dataset,
-        batch_size=1,
-        collate_fn=data_collator
-    ))).to(model.device)
+    data = next(iter(DataLoader(dataset, batch_size=1, collate_fn=data_collator))).to(
+        model.device
+    )
     loss, logits = model(**data)
-    logger.info(f'loss={loss}')
+    logger.info(f"loss={loss}")
     logger.info(f'logits={logits[data["cls_mask"] == 1]}')
     logger.info(f'labels={data["labels"][data["cls_mask"] == 1]}')
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
