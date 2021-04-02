@@ -50,6 +50,7 @@ class BertSumAbsConfig(EncoderDecoderConfig):
         self,
         encoder_model_name_or_path: str = "bert-base-uncased",
         smoothing: float = 0.0,
+        use_onmt_transformer: bool = False,
         **kwargs: Any,
     ):
         if "encoder" in kwargs:
@@ -73,3 +74,4 @@ class BertSumAbsConfig(EncoderDecoderConfig):
 
         super().__init__(encoder=encoder_config, decoder=decoder_config)
         self.encoder_model_name_or_path = encoder_model_name_or_path
+        self.use_onmt_transformer = use_onmt_transformer
