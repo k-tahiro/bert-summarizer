@@ -8,15 +8,17 @@ import torch
 
 
 class BertSumAbsModelMigrator:
-    MAPPING: Dict[str, str] = {
+    DECODER_MAPPING: Dict[str, str] = {
         "decoder.decoder.embeddings.make_embedding.emb_luts.0.weight": "decoder.embeddings.0.weight",
         "decoder.decoder.embeddings.make_embedding.pe.pe": "decoder.embeddings.1.pe",
         "decoder.decoder.layer_norm.weight": "decoder.decoder.norm.weight",
         "decoder.decoder.layer_norm.bias": "decoder.decoder.norm.bias",
+    }
+    GENERATOR_MAPPING: Dict[str, str] = {
         "decoder.generator.0.weight": "decoder.generator.weight",
         "decoder.generator.0.bias": "decoder.generator.bias",
     }
-    DECODER_MAPPING: Dict[str, str] = {
+    TRANSFORMER_DECODER_MAPPING: Dict[str, str] = {
         "self_attn.final_linear.weight": "self_attn.out_proj.weight",
         "self_attn.final_linear.bias": "self_attn.out_proj.bias",
         "context_attn.final_linear.weight": "multihead_attn.out_proj.weight",
@@ -59,19 +61,34 @@ class BertSumAbsModelMigrator:
         self.attns: Dict[str, torch.Tensor] = dict()
         self.n = 0
 
-    def migrate(self, state_dict: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+    def migrate(
+        self,
+        state_dict: Dict[str, torch.Tensor],
+        migrate_transformer: bool = False,
+        migrate_generator: bool = True,
+    ) -> Dict[str, torch.Tensor]:
         for k, v in state_dict.items():
             if k.startswith("encoder."):
                 self.new_state_dict[k] = v
                 continue
 
-            if k == "decoder.loss.one_hot":
+            if migrate_generator and k == "decoder.loss.one_hot":
                 continue
 
-            if k in self.MAPPING:
+            if migrate_generator and k in self.GENERATOR_MAPPING:
                 if self.n != 0 and self.attns:
                     self._update_state_dict()
-                self.new_state_dict[self.MAPPING[k]] = v
+                self.new_state_dict[self.GENERATOR_MAPPING[k]] = v
+                continue
+
+            if not migrate_transformer:
+                self.new_state_dict[k] = v
+                continue
+
+            if k in self.DECODER_MAPPING:
+                if self.n != 0 and self.attns:
+                    self._update_state_dict()
+                self.new_state_dict[self.DECODER_MAPPING[k]] = v
                 continue
 
             ks = k.split(".")[3:]
@@ -80,8 +97,8 @@ class BertSumAbsModelMigrator:
                 self.n = int(ks[0])
 
             k = ".".join(ks[1:])
-            if k in self.DECODER_MAPPING:
-                self.decoder_state_dict[self.DECODER_MAPPING[k]] = v
+            if k in self.TRANSFORMER_DECODER_MAPPING:
+                self.decoder_state_dict[self.TRANSFORMER_DECODER_MAPPING[k]] = v
                 continue
             self.attns[k] = v
 
@@ -133,16 +150,17 @@ def main() -> None:
     args = parser.parse_args()
 
     input_dir = Path(args.input_dir)
+    output_dir = Path(args.output_dir)
+
     with open(input_dir / "config.json") as f:
         config = json.load(f)
     config["use_onmt_transformer"] = True
+    with open(output_dir / "config.json", "w") as f:
+        json.dump(config, f)
+
     state_dict = torch.load(input_dir / "pytorch_model.bin", map_location="cpu")
     migrator = BertSumAbsModelMigrator()
     new_state_dict = migrator.migrate(state_dict)
-
-    output_dir = Path(args.output_dir)
-    with open(output_dir / "config.json", "w") as f:
-        json.dump(config, f)
     torch.save(new_state_dict, output_dir / "pytorch_model.bin")
 
 
