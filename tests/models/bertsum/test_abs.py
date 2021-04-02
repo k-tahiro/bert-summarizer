@@ -5,8 +5,8 @@ import torch
 from transformers import BertConfig
 
 from bert_summarizer.config import BertSumAbsConfig
-from bert_summarizer.models.bertsum import (
-    BertSumAbs,
+from bert_summarizer.models import BertSumAbs
+from bert_summarizer.models.bertsum.abs import (
     BertSumAbsDecoder,
     BertSumAbsOpenNMTDecoder,
 )

@@ -4,7 +4,7 @@ import pytest
 import torch
 
 from bert_summarizer.config import BertSumExtConfig
-from bert_summarizer.models.bertsum import BertSumExt
+from bert_summarizer.models import BertSumExt
 
 from .util import skip_on_ga
 
