@@ -15,6 +15,7 @@ enable = true
 python = ">=3.6.2,<3.9"
 ginza = ">=4.0.5"
 transformers = {extras = ["ja", "torch"], version = ">=4.0.0"}
+OpenNMT-py = {version = ">=2.0.1", optional = true}
 
 [tool.poetry.dev-dependencies]
 tox = "*"
@@ -23,7 +24,7 @@ pytest-cov = "*"
 pre-commit = "*"
 
 [tool.poetry.extras]
-onmt = ["OpenNMT-py>=2.0.1"]
+onmt = ["OpenNMT-py"]
 
 [tool.black]
 ensure_newline_before_comments = true
