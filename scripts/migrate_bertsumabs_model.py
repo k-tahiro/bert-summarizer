@@ -136,14 +136,14 @@ def main() -> None:
     with open(input_dir / "config.json") as f:
         config = json.load(f)
     config["use_onmt_transformer"] = True
-    state_dict = torch.load(input_dir / "pytorch.bin", map_location="cpu")
+    state_dict = torch.load(input_dir / "pytorch_model.bin", map_location="cpu")
     migrator = BertSumAbsModelMigrator()
     new_state_dict = migrator.migrate(state_dict)
 
     output_dir = Path(args.output_dir)
     with open(output_dir / "config.json", "w") as f:
         json.dump(config, f)
-    torch.save(new_state_dict, output_dir / "pytorch.bin")
+    torch.save(new_state_dict, output_dir / "pytorch_model.bin")
 
 
 if __name__ == "__main__":
