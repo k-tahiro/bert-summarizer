@@ -36,9 +36,7 @@ class BertSumAbsDecoder(BertLMHeadModel):
             nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps),
         )
         self.generator = nn.Linear(config.hidden_size, config.vocab_size)
-
         self.loss = LabelSmoothingLoss(config.vocab_size, config.smoothing)
-
         self.init_weights()
 
     def get_input_embeddings(self) -> nn.Module:
@@ -66,32 +64,20 @@ class BertSumAbsDecoder(BertLMHeadModel):
         return_dict: Optional[bool] = None,
         **kwargs: Any,
     ) -> Union[Tuple[Optional[torch.Tensor]], CausalLMOutputWithCrossAttentions]:
-        tgt = self.embeddings(input_ids).transpose(0, 1)
-        if encoder_hidden_states is None:
-            raise ValueError("encoder_hidden_states must be passed.")
-        memory = encoder_hidden_states.transpose(0, 1)
-
-        # Create masks
-        tgt_mask = torch.ones(
-            (tgt.size(0), tgt.size(0)),
-            dtype=torch.bool,
-            device=tgt.device,
-        ).triu_(1)
-        tgt_key_padding_mask = (
-            attention_mask ^ True if attention_mask is not None else None
-        )
-        memory_key_padding_mask = (
-            encoder_attention_mask ^ True
-            if encoder_attention_mask is not None
-            else None
-        )
-
-        output = self.decoder(
-            tgt,
-            memory,
-            tgt_mask=tgt_mask,
-            tgt_key_padding_mask=tgt_key_padding_mask,
-            memory_key_padding_mask=memory_key_padding_mask,
+        output = self._forward(
+            input_ids,
+            attention_mask,
+            token_type_ids,
+            position_ids,
+            head_mask,
+            inputs_embeds,
+            encoder_hidden_states,
+            encoder_attention_mask,
+            labels,
+            output_attentions,
+            output_hidden_states,
+            return_dict,
+            **kwargs,
         )
 
         # transformers style loss calculation
@@ -124,3 +110,49 @@ class BertSumAbsDecoder(BertLMHeadModel):
             attentions=None,
             cross_attentions=None,
         )
+
+    def _forward(
+        self,
+        input_ids: Optional[torch.Tensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        token_type_ids: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.Tensor] = None,
+        head_mask: Optional[torch.Tensor] = None,
+        inputs_embeds: Optional[torch.Tensor] = None,
+        encoder_hidden_states: Optional[torch.Tensor] = None,
+        encoder_attention_mask: Optional[torch.Tensor] = None,
+        labels: Optional[torch.Tensor] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        return_dict: Optional[bool] = None,
+        **kwargs: Any,
+    ) -> torch.Tensor:
+        tgt = self.embeddings(input_ids).transpose(0, 1)
+        if encoder_hidden_states is None:
+            raise ValueError("encoder_hidden_states must be passed.")
+        memory = encoder_hidden_states.transpose(0, 1)
+
+        # Create masks
+        tgt_mask = torch.ones(
+            (tgt.size(0), tgt.size(0)),
+            dtype=torch.bool,
+            device=tgt.device,
+        ).triu_(1)
+        tgt_key_padding_mask = (
+            attention_mask ^ True if attention_mask is not None else None
+        )
+        memory_key_padding_mask = (
+            encoder_attention_mask ^ True
+            if encoder_attention_mask is not None
+            else None
+        )
+
+        output = self.decoder(
+            tgt,
+            memory,
+            tgt_mask=tgt_mask,
+            tgt_key_padding_mask=tgt_key_padding_mask,
+            memory_key_padding_mask=memory_key_padding_mask,
+        )
+
+        return output

@@ -2,20 +2,19 @@ from logging import getLogger
 from typing import Any, Optional, Tuple, Union
 
 import torch
+from onmt.decoders import TransformerDecoder
+from onmt.modules import Embeddings
 from torch import nn
-from transformers import BertConfig, BertLMHeadModel, BertPreTrainedModel
+from transformers import BertConfig, BertPreTrainedModel
 from transformers.modeling_outputs import CausalLMOutputWithCrossAttentions
 
 from ...loss import LabelSmoothingLoss
+from .decoder import BertSumAbsDecoder
 
 logger = getLogger(__name__)
 
 
-from onmt.decoders import TransformerDecoder
-from onmt.modules import Embeddings
-
-
-class BertSumAbsOpenNMTDecoder(BertLMHeadModel):
+class BertSumAbsOpenNMTDecoder(BertSumAbsDecoder):
     def __init__(self, config: BertConfig):
         super(BertPreTrainedModel, self).__init__(config)
 
@@ -41,9 +40,7 @@ class BertSumAbsOpenNMTDecoder(BertLMHeadModel):
             0,
         )
         self.generator = nn.Linear(config.hidden_size, config.vocab_size)
-
         self.loss = LabelSmoothingLoss(config.vocab_size, config.smoothing)
-
         self.init_weights()
 
     def get_input_embeddings(self) -> nn.Module:
@@ -55,7 +52,7 @@ class BertSumAbsOpenNMTDecoder(BertLMHeadModel):
     def get_output_embeddings(self) -> nn.Module:
         return self.generator
 
-    def forward(
+    def _forward(
         self,
         input_ids: Optional[torch.Tensor] = None,
         attention_mask: Optional[torch.Tensor] = None,
@@ -70,7 +67,7 @@ class BertSumAbsOpenNMTDecoder(BertLMHeadModel):
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
         **kwargs: Any,
-    ) -> Union[Tuple[Optional[torch.Tensor]], CausalLMOutputWithCrossAttentions]:
+    ) -> torch.Tensor:
         if input_ids is None:
             raise ValueError
         if encoder_hidden_states is None:
@@ -87,33 +84,4 @@ class BertSumAbsOpenNMTDecoder(BertLMHeadModel):
             tgt, memory_bank, memory_lengths=encoder_attention_mask.sum(axis=1)
         )
 
-        # transformers style loss calculation
-        decoder_outputs = output.transpose(0, 1)
-        prediction_scores = self.generator(decoder_outputs)
-
-        lm_loss = None
-        if labels is not None:
-            # we are doing next-token prediction; shift prediction scores and input ids by one
-            shifted_prediction_scores = prediction_scores[:, :-1, :].contiguous()
-            labels = labels[:, 1:].contiguous()
-
-            pred = shifted_prediction_scores.view(-1, self.config.vocab_size)
-            target = labels.view(-1)
-
-            valid_positions = target.ne(self.config.pad_token_id)
-            pred = pred[valid_positions]
-            target = target[valid_positions]
-            lm_loss = self.loss(pred, target)
-
-        if not return_dict:
-            output = (prediction_scores, None, None, None, None)
-            return ((lm_loss,) + output) if lm_loss is not None else output
-
-        return CausalLMOutputWithCrossAttentions(
-            loss=lm_loss,
-            logits=prediction_scores,
-            past_key_values=None,
-            hidden_states=None,
-            attentions=None,
-            cross_attentions=None,
-        )
+        return output
