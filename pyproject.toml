@@ -22,6 +22,8 @@ tox = "*"
 pytest = "*"
 pytest-cov = "*"
 pre-commit = "*"
+mypy = "*"
+black = "*"
 
 [tool.poetry.extras]
 onmt = ["OpenNMT-py"]
