@@ -12,21 +12,26 @@ class PrefixAllowedTokensFnBase(ABC):
 
 
 class NGramPrefixAllowedTokensFn(PrefixAllowedTokensFnBase):
-    def __init__(self, vocab_size: int, ngrams: List[List[int]]):
+    def __init__(self, vocab_size: int, eos_token_id: int, ngrams: List[List[int]]):
         self.all_tokens = list(range(vocab_size))
+        self.eos_token_id = eos_token_id
         self.ngrams = ngrams
 
     def __call__(self, batch_id: int, inputs_ids: torch.Tensor) -> List[int]:
-        return [
-            ngram[-1]
-            for ngram in self.ngrams
-            if self.match(ngram, inputs_ids)
-        ] or self.all_tokens
+        allowed_tokens = [
+            ngram[-1] for ngram in self.ngrams if self.match(ngram, inputs_ids)
+        ]
+
+        if allowed_tokens:
+            allowed_tokens.append(self.eos_token_id)
+            return allowed_tokens
+        else:
+            return self.all_tokens
 
     @staticmethod
     def match(ngram: List[int], inputs_ids: torch.Tensor) -> bool:
         prefix = ngram[:-1]
-        actual = inputs_ids[-len(prefix):].tolist()
+        actual: List[int] = inputs_ids[-len(prefix) :].tolist()
         return actual == prefix
 
 
@@ -35,6 +40,8 @@ class GlobalDistributionLogitsProcessor(LogitsProcessor):
         self.distribution = distribution
         self.lambda_ = lambda_
 
-    def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor) -> torch.FloatTensor:
+    def __call__(
+        self, input_ids: torch.LongTensor, scores: torch.FloatTensor
+    ) -> torch.FloatTensor:
         scores = (1 - self.lambda_) * scores + self.lambda_ * self.distribution
         return scores
