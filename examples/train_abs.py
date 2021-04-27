@@ -10,6 +10,7 @@ from bert_summarizer.data import (
 )
 from bert_summarizer.models import BertSumAbs
 from bert_summarizer.trainers import EncoderDecoderTrainer
+from bert_summarizer.utils.logits_process import NGramPrefixAllowedTokensFn
 
 logger = getLogger(__name__)
 
@@ -75,6 +76,10 @@ def main() -> None:
         eos_token_id=tokenizer.sep_token_id,
         length_penalty=0.6,
         no_repeat_ngram_size=3,
+        # prefix_allowed_tokens_fn=NGramPrefixAllowedTokensFn(
+        #     model.config.decoder.vocab_size,
+        #     [[3231, 2589]]
+        # ),
     )
     results = [tokenizer.decode(output, skip_special_tokens=True) for output in outputs]
 
