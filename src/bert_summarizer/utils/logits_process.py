@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import Callable, List
 
 import torch
 from transformers import LogitsProcessor
@@ -44,4 +44,22 @@ class GlobalDistributionLogitsProcessor(LogitsProcessor):
         self, input_ids: torch.LongTensor, scores: torch.FloatTensor
     ) -> torch.FloatTensor:
         scores = (1 - self.lambda_) * scores + self.lambda_ * self.distribution
+        return scores
+
+
+class GlobalConditionalDistributionLogitsProcessor(LogitsProcessor):
+    def __init__(
+        self,
+        conditional_distribution: Callable[[torch.LongTensor], torch.FloatTensor],
+        lambda_: float,
+    ):
+        self.conditional_distribution = conditional_distribution
+        self.lambda_ = lambda_
+
+    def __call__(
+        self, input_ids: torch.LongTensor, scores: torch.FloatTensor
+    ) -> torch.FloatTensor:
+        scores = (
+            1 - self.lambda_
+        ) * scores + self.lambda_ * self.conditional_distribution(input_ids)
         return scores

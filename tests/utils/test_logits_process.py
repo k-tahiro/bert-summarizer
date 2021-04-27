@@ -4,6 +4,7 @@ import pytest
 import torch
 
 from bert_summarizer.utils.logits_process import (
+    GlobalConditionalDistributionLogitsProcessor,
     GlobalDistributionLogitsProcessor,
     NGramPrefixAllowedTokensFn,
 )
@@ -71,6 +72,34 @@ class TestGlobalDistributionLogitsProcessor:
     def test_call(
         self,
         logits_processor: GlobalDistributionLogitsProcessor,
+        input_ids: torch.LongTensor,
+        scores: torch.FloatTensor,
+        expected: torch.FloatTensor,
+    ) -> None:
+        assert (logits_processor(input_ids, scores) == expected).all()
+
+
+class TestGlobalConditionalDistributionLogitsProcessor:
+    @pytest.fixture
+    def logits_processor(self) -> GlobalConditionalDistributionLogitsProcessor:
+        return GlobalConditionalDistributionLogitsProcessor(
+            lambda x: torch.ones(2) / 2,
+            0.5,
+        )
+
+    @pytest.mark.parametrize(
+        "input_ids, scores, expected",
+        [
+            (
+                torch.ones(2, 2, dtype=torch.int),
+                torch.tensor([[0.1, 0.9], [0.4, 0.6]]),
+                torch.tensor([[0.3, 0.7], [0.45, 0.55]]),
+            ),
+        ],
+    )
+    def test_call(
+        self,
+        logits_processor: GlobalConditionalDistributionLogitsProcessor,
         input_ids: torch.LongTensor,
         scores: torch.FloatTensor,
         expected: torch.FloatTensor,
