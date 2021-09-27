@@ -55,7 +55,7 @@ def main() -> None:
     model = create_model(dataset)
 
     args = TrainingArguments("BertSumAbs")
-    data_collator = EncoderDecoderDataCollatorWithPadding(
+    data_collator = EncoderDecoderDataCollatorWithPadding(  # type: ignore
         dataset.tokenizer,
         decoder_tokenizer=tokenizer,
     )
