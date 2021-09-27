@@ -18,13 +18,13 @@ class TestEncoderDecoderDataCollatorWithPadding:
     def train_data_collator(
         self, dataset: BertSumAbsDataset
     ) -> EncoderDecoderDataCollatorWithPadding:
-        return EncoderDecoderDataCollatorWithPadding(tokenizer=dataset.tokenizer)
+        return EncoderDecoderDataCollatorWithPadding(tokenizer=dataset.tokenizer)  # type: ignore
 
     @pytest.fixture
     def eval_data_collator(
         self, dataset: BertSumAbsDataset
     ) -> EncoderDecoderDataCollatorWithPadding:
-        return EncoderDecoderDataCollatorWithPadding(tokenizer=dataset.tokenizer).eval()
+        return EncoderDecoderDataCollatorWithPadding(tokenizer=dataset.tokenizer).eval()  # type: ignore
 
     @pytest.fixture
     def expected_train_batch(self) -> Dict[str, torch.Tensor]:

@@ -47,7 +47,7 @@ def main() -> None:
     basicConfig(level="INFO")
 
     dataset = create_dataset()
-    data_collator = DataCollatorWithPaddingWithAdditionalFeatures(
+    data_collator = DataCollatorWithPaddingWithAdditionalFeatures(  # type: ignore
         dataset.tokenizer, additional_features=["cls_mask", "label"]
     )
     model = create_model(dataset.model_name)
