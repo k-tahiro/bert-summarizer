@@ -13,7 +13,7 @@ enable = true
 
 [tool.poetry.dependencies]
 python = ">=3.6.2,<3.9"
-ginza = ">=4.0.5"
+ginza = ">=4.0.5,<5.0.0"
 transformers = {extras = ["ja", "torch"], version = ">=4.0.0"}
 OpenNMT-py = {version = ">=2.0.1", optional = true}
 
