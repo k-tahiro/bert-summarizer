@@ -16,6 +16,7 @@ class BertSumDataset(Dataset):
         model_name: str,
         src: Union[List[str], List[List[str]]],
         tgt: Optional[Union[List[str], List[List[str]]]] = None,
+        model_max_length: Optional[int] = None,
     ):
         if tgt is not None and len(src) != len(tgt):
             raise RuntimeError("Different length src v.s. tgt pair is given.")
@@ -24,6 +25,7 @@ class BertSumDataset(Dataset):
         self.model_name = model_name
         self.src = src
         self.tgt = tgt
+        self.model_max_length = model_max_length
 
         self.sentence_splitter = SentenceSplitter(self.is_japanese)
 
@@ -42,6 +44,9 @@ class BertSumDataset(Dataset):
             tokenizer = BertSumJapaneseTokenizer.from_pretrained(self.model_name)
         else:
             tokenizer = BertSumTokenizer.from_pretrained(self.model_name)
+
+        if self.model_max_length is not None:
+            tokenizer.model_max_length = self.model_max_length
         return tokenizer
 
     def _encode(
