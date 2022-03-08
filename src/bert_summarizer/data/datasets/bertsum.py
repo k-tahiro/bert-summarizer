@@ -157,8 +157,9 @@ class BertSumExtDataset(BertSumDataset):
         model_name: str,
         src: List[str],
         tgt: Optional[Union[List[str], List[List[str]]]] = None,
+        model_max_length: Optional[int] = None,
     ):
-        super().__init__(model_name, src, tgt)
+        super().__init__(model_name, src, tgt, model_max_length)
 
         tokenizer = self.tokenizer
         bos_token_id = tokenizer.cls_token_id
@@ -224,9 +225,13 @@ class BertSumAbsDataset(BertSumDataset):
     TGT_ADDITIONAL_SPECIAL_TOKENS = ["[unused3]"]
 
     def __init__(
-        self, model_name: str, src: List[str], tgt: Optional[List[str]] = None
+        self,
+        model_name: str,
+        src: List[str],
+        tgt: Optional[List[str]] = None,
+        model_max_length: Optional[int] = None,
     ):
-        super().__init__(model_name, src, tgt)
+        super().__init__(model_name, src, tgt, model_max_length)
 
         if tgt is None:
             return
