@@ -1,26 +1,22 @@
-import re
 from functools import partial, reduce
 from logging import getLogger
 from typing import Dict, List, Optional, Union
 
-import spacy
-from spacy.lang.en import English
 from torch.utils.data import Dataset
 
 from ...tokenizers import BertSumJapaneseTokenizer, BertSumTokenizer
-from ...utils.bertsum import GreedySelector
+from ...utils.bertsum import GreedySelector, SentenceSplitter
 
 logger = getLogger(__name__)
 
 
 class BertSumDataset(Dataset):
-    EMPTY_PATTERN = re.compile(r"\s+")
-
     def __init__(
         self,
         model_name: str,
-        src: List[str],
+        src: Union[List[str], List[List[str]]],
         tgt: Optional[Union[List[str], List[List[str]]]] = None,
+        model_max_length: Optional[int] = None,
     ):
         if tgt is not None and len(src) != len(tgt):
             raise RuntimeError("Different length src v.s. tgt pair is given.")
@@ -29,15 +25,9 @@ class BertSumDataset(Dataset):
         self.model_name = model_name
         self.src = src
         self.tgt = tgt
+        self.model_max_length = model_max_length
 
-        # load nlp
-        if self.is_japanese:
-            nlp = spacy.load("ja_ginza")
-        else:
-            nlp = English()
-            sentencizer = nlp.create_pipe("sentencizer")
-            nlp.add_pipe(sentencizer)
-        self.nlp = nlp
+        self.sentence_splitter = SentenceSplitter(self.is_japanese)
 
         # create data
         encoded_src = self._encode(self.tokenizer, src)
@@ -54,12 +44,15 @@ class BertSumDataset(Dataset):
             tokenizer = BertSumJapaneseTokenizer.from_pretrained(self.model_name)
         else:
             tokenizer = BertSumTokenizer.from_pretrained(self.model_name)
+
+        if self.model_max_length is not None:
+            tokenizer.model_max_length = self.model_max_length
         return tokenizer
 
     def _encode(
         self,
         tokenizer: Union[BertSumTokenizer, BertSumJapaneseTokenizer],
-        data: List[str],
+        data: Union[List[str], List[List[str]]],
         keep_sents: bool = True,
     ) -> List[Dict[str, List[int]]]:
         concat_sents = partial(self._concat_sents, tokenizer)
@@ -68,7 +61,10 @@ class BertSumDataset(Dataset):
         sentences = []
         encoded_data = []
         for text in data:
-            sents = self._sentencize(text)
+            if isinstance(text, str):
+                sents = self.sentence_splitter(text)
+            else:
+                sents = text
             if len(sents) == 0:
                 continue
             if keep_sents:
@@ -92,17 +88,6 @@ class BertSumDataset(Dataset):
         if keep_sents:
             self.sentences = sentences
         return encoded_data
-
-    def _sentencize(self, text: str) -> List[str]:
-        sents = [
-            [str(s) for s in self.nlp(line).sents]
-            for line in text.splitlines()
-            if line and not self.EMPTY_PATTERN.fullmatch(line)
-        ]
-        if sents:
-            return reduce(lambda x, y: x + y, sents)
-        else:
-            return []
 
     @staticmethod
     def _concat_sents(
@@ -172,8 +157,9 @@ class BertSumExtDataset(BertSumDataset):
         model_name: str,
         src: List[str],
         tgt: Optional[Union[List[str], List[List[str]]]] = None,
+        model_max_length: Optional[int] = None,
     ):
-        super().__init__(model_name, src, tgt)
+        super().__init__(model_name, src, tgt, model_max_length)
 
         tokenizer = self.tokenizer
         bos_token_id = tokenizer.cls_token_id
@@ -190,14 +176,16 @@ class BertSumExtDataset(BertSumDataset):
         valid_sentences = []
         valid_tgt = []
         invalid_data = []
-        for data, sents_src, sents_tgt in zip(self.data, self.sentences, self.tgt):
-            if isinstance(sents_tgt, str):
-                sents_tgt = self._sentencize(sents_tgt)
+        for i in range(len(self.data)):
+            data = self.data[i]
+            sents_src = self.sentences[i]
+            tgt_i = self.tgt[i]
+
+            if isinstance(tgt_i, str):
+                sents_tgt = self.sentence_splitter(tgt_i)
                 sents_tgt = self.gs(sents_src, sents_tgt)
             else:
-                sents_tgt = [
-                    sent for text in sents_tgt for sent in self._sentencize(text)
-                ]  # to support multiple sentences in one sentence
+                sents_tgt = tgt_i
 
             data["label"] = []
             index = 0
@@ -237,9 +225,13 @@ class BertSumAbsDataset(BertSumDataset):
     TGT_ADDITIONAL_SPECIAL_TOKENS = ["[unused3]"]
 
     def __init__(
-        self, model_name: str, src: List[str], tgt: Optional[List[str]] = None
+        self,
+        model_name: str,
+        src: List[str],
+        tgt: Optional[List[str]] = None,
+        model_max_length: Optional[int] = None,
     ):
-        super().__init__(model_name, src, tgt)
+        super().__init__(model_name, src, tgt, model_max_length)
 
         if tgt is None:
             return

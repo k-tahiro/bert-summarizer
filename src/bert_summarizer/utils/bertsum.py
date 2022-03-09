@@ -1,5 +1,9 @@
+import re
+from functools import reduce
 from typing import Dict, List, Union
 
+import spacy
+from spacy.lang.en import English
 from transformers import PreTrainedTokenizer
 
 
@@ -76,7 +80,7 @@ class GreedySelector:
         self._rouge = BertRouge(tokenizer)
         self._n = n
 
-    def __call__(self, sents_src: List[str], sents_tgt: List[str]) -> list:
+    def __call__(self, sents_src: List[str], sents_tgt: List[str]) -> List[str]:
         reference = "\n".join(sents_tgt)
         max_rouge = 0.0
         selected: List[int] = []
@@ -101,3 +105,30 @@ class GreedySelector:
             max_rouge = cur_max_rouge
 
         return [sents_src[i] for i in sorted(selected)]
+
+
+class SentenceSplitter:
+    EMPTY_PATTERN = re.compile(r"\s+")
+
+    def __init__(self, is_japanese: bool = False) -> None:
+        self.is_japanese = is_japanese
+
+        if self.is_japanese:
+            nlp = spacy.load("ja_ginza")
+        else:
+            nlp = English()
+            sentencizer = nlp.create_pipe("sentencizer")
+            nlp.add_pipe(sentencizer)
+
+        self.nlp = nlp
+
+    def __call__(self, text: str) -> List[str]:
+        sents = [
+            [str(s) for s in self.nlp(line).sents]
+            for line in text.splitlines()
+            if line and not self.EMPTY_PATTERN.fullmatch(line)
+        ]
+        if sents:
+            return reduce(lambda x, y: x + y, sents)
+        else:
+            return []
