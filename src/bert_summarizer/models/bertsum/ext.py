@@ -5,11 +5,19 @@ import torch
 from torch import nn
 from torch.nn.init import xavier_uniform_
 from transformers import BertModel, BertPreTrainedModel
-from transformers.modeling_outputs import SequenceClassifierOutput
+from transformers.modeling_outputs import (
+    BaseModelOutputWithPoolingAndCrossAttentions,
+    SequenceClassifierOutput,
+)
 
 from ...config import BertSumExtConfig
 
 logger = getLogger(__name__)
+
+BertModelOutput = Union[
+    BaseModelOutputWithPoolingAndCrossAttentions, Tuple[torch.FloatTensor, ...]
+]
+BertSumExtOutput = Union[SequenceClassifierOutput, Tuple[torch.FloatTensor, ...]]
 
 
 class BertSumExt(BertPreTrainedModel):
@@ -43,16 +51,16 @@ class BertSumExt(BertPreTrainedModel):
                 if p.dim() > 1:
                     xavier_uniform_(p)
 
-    def forward(
+    def get_cls_embeddings(
         self,
         input_ids: Optional[torch.Tensor] = None,
         attention_mask: Optional[torch.Tensor] = None,
         token_type_ids: Optional[torch.Tensor] = None,
         cls_mask: Optional[torch.Tensor] = None,
-        labels: Optional[torch.Tensor] = None,
         return_dict: Optional[bool] = None,
+        return_outputs: bool = False,
         **kwargs: Any,
-    ) -> Union[Tuple[Optional[torch.Tensor]], SequenceClassifierOutput]:
+    ) -> Union[torch.Tensor, Tuple[BertModelOutput, torch.Tensor]]:
         outputs = self.bert(
             input_ids=input_ids,
             attention_mask=attention_mask,
@@ -70,6 +78,30 @@ class BertSumExt(BertPreTrainedModel):
         )
         cls_output = cls_output.transpose(0, 1)
 
+        if return_outputs:
+            return outputs, cls_output
+        else:
+            return cls_output
+
+    def forward(
+        self,
+        input_ids: Optional[torch.Tensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        token_type_ids: Optional[torch.Tensor] = None,
+        cls_mask: Optional[torch.Tensor] = None,
+        labels: Optional[torch.Tensor] = None,
+        return_dict: Optional[bool] = None,
+        **kwargs: Any,
+    ) -> BertSumExtOutput:
+        outputs, cls_output = self.get_cls_embeddings(
+            input_ids,
+            attention_mask,
+            token_type_ids,
+            cls_mask,
+            return_dict,
+            return_outputs=True,
+            **kwargs,
+        )
         logits = self.classifier(cls_output).squeeze(2)
 
         loss = None
@@ -87,6 +119,6 @@ class BertSumExt(BertPreTrainedModel):
         return SequenceClassifierOutput(
             loss=loss,
             logits=logits,
-            hidden_states=outputs.hidden_states,
-            attentions=outputs.attentions,
+            hidden_states=outputs.hidden_states,  # type: ignore
+            attentions=outputs.attentions,  # type: ignore
         )
