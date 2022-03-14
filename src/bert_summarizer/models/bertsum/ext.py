@@ -51,14 +51,13 @@ class BertSumExt(BertPreTrainedModel):
                 if p.dim() > 1:
                     xavier_uniform_(p)
 
-    def get_cls_embeddings(
+    def encode(
         self,
         input_ids: Optional[torch.Tensor] = None,
         attention_mask: Optional[torch.Tensor] = None,
         token_type_ids: Optional[torch.Tensor] = None,
         cls_mask: Optional[torch.Tensor] = None,
         return_dict: Optional[bool] = None,
-        return_outputs: bool = False,
         **kwargs: Any,
     ) -> Union[torch.Tensor, Tuple[BertModelOutput, torch.Tensor]]:
         outputs = self.bert(
@@ -78,10 +77,7 @@ class BertSumExt(BertPreTrainedModel):
         )
         cls_output = cls_output.transpose(0, 1)
 
-        if return_outputs:
-            return outputs, cls_output
-        else:
-            return cls_output
+        return outputs, cls_output
 
     def forward(
         self,
@@ -93,13 +89,12 @@ class BertSumExt(BertPreTrainedModel):
         return_dict: Optional[bool] = None,
         **kwargs: Any,
     ) -> BertSumExtOutput:
-        outputs, cls_output = self.get_cls_embeddings(
+        outputs, cls_output = self.encode(
             input_ids,
             attention_mask,
             token_type_ids,
             cls_mask,
             return_dict,
-            return_outputs=True,
             **kwargs,
         )
         logits = self.classifier(cls_output).squeeze(2)
@@ -122,3 +117,24 @@ class BertSumExt(BertPreTrainedModel):
             hidden_states=outputs.hidden_states,  # type: ignore
             attentions=outputs.attentions,  # type: ignore
         )
+
+    def get_cls_embeddings(
+        self,
+        input_ids: Optional[torch.Tensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        token_type_ids: Optional[torch.Tensor] = None,
+        cls_mask: Optional[torch.Tensor] = None,
+        return_dict: Optional[bool] = None,
+        **kwargs: Any,
+    ) -> torch.Tensor:
+        if cls_mask is None:
+            raise RuntimeError("cls_mask must be specified.")
+        _, cls_output = self.encode(
+            input_ids,
+            attention_mask,
+            token_type_ids,
+            cls_mask,
+            return_dict,
+            **kwargs,
+        )
+        return cls_output[cls_mask.bool()]
