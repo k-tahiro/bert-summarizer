@@ -124,6 +124,7 @@ class BertSumExt(BertPreTrainedModel):
         attention_mask: Optional[torch.Tensor] = None,
         token_type_ids: Optional[torch.Tensor] = None,
         cls_mask: Optional[torch.Tensor] = None,
+        labels: Optional[torch.Tensor] = None,
         return_dict: Optional[bool] = None,
         **kwargs: Any,
     ) -> torch.Tensor:
