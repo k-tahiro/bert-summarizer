@@ -20,7 +20,8 @@ class DataCollatorWithPaddingWithAdditionalFeatures(DataCollatorWithPadding):
         additional_features = defaultdict(list)
         for feature in features:
             for key in self.additional_features:
-                additional_features[key].append(feature[key])
+                if key in feature:
+                    additional_features[key].append(feature[key])
         features = [
             {k: v for k, v in feature.items() if k not in self.additional_features}
             for feature in features
