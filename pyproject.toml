@@ -1,32 +1,33 @@
-[tool.poetry]
+[project]
 name = "bert-summarizer"
 version = "0.0.0"
 description = "Text Summarization Library based on transformers"
 license = "MIT"
-authors = ["k-tahiro <tahiro.k.ad@gmail.com>"]
+authors = [
+  {name = "k-tahiro", email = "tahiro.k.ad@gmail.com"}
+]
 readme = "README.md"
-repository = "https://github.com/k-tahiro/bert-summarizer"
+urls = {Homepage = "https://github.com/k-tahiro/bert-summarizer"}
 keywords = ["BERT", "Text Summarization"]
+requires-python = ">=3.6.2,<3.9"
 
-[tool.poetry-dynamic-versioning]
-enable = true
+dependencies = [
+  "ginza>=4.0.5,<5.0.0",
+  "transformers[ja,torch]>=4.0.0",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.6.2,<3.9"
-ginza = ">=4.0.5,<5.0.0"
-transformers = {extras = ["ja", "torch"], version = ">=4.0.0"}
-OpenNMT-py = {version = ">=2.0.1", optional = true}
-
-[tool.poetry.dev-dependencies]
-tox = "*"
-pytest = "*"
-pytest-cov = "*"
-pre-commit = "*"
-mypy = "*"
-black = "*"
-
-[tool.poetry.extras]
-onmt = ["OpenNMT-py"]
+[project.optional-dependencies]
+dev = [
+  "tox",
+  "pytest",
+  "pytest-cov",
+  "pre-commit",
+  "mypy",
+  "black",
+]
+onmt = [
+  "OpenNMT-py>=2.0.1",
+]
 
 [tool.black]
 ensure_newline_before_comments = true
@@ -45,5 +46,5 @@ multi_line_output = 3
 use_parentheses = true
 
 [build-system]
-requires = ["poetry"]
-build-backend = "poetry.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
