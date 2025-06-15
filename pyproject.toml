@@ -9,7 +9,7 @@ authors = [
 readme = "README.md"
 urls = {Homepage = "https://github.com/k-tahiro/bert-summarizer"}
 keywords = ["BERT", "Text Summarization"]
-requires-python = ">=3.6.2,<3.9"
+requires-python = ">=3.8,<3.13"
 
 dependencies = [
   "ginza>=4.0.5,<5.0.0",
