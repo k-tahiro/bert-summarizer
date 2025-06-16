@@ -7,7 +7,7 @@ authors = [{ name = "k-tahiro", email = "tahiro.k.ad@gmail.com" }]
 readme = "README.md"
 urls = { Homepage = "https://github.com/k-tahiro/bert-summarizer" }
 keywords = ["BERT", "Text Summarization"]
-requires-python = ">=3.8,<3.13"
+requires-python = ">=3.9,<3.13"
 
 dependencies = ["ginza>=4.0.5", "transformers[ja,torch]>=4.0.0"]
 
